@@ -1,2 +1,14 @@
+# Dependencies
 /node_modules
+
+# Environment variables
 .env
+
+# Prisma
+/prisma/.env
+/prisma/migrations/migration_lock.toml
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
