@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  username String  @unique
+  password String
+  isAdmin  Boolean @default(false)
+
+  orders Order[] // relasi: satu user bisa punya banyak order
+}
+
+model Order {
+  id        Int      @id @default(autoincrement())
+  source    String // Shopee, Tokopedia, dll
+  customer  String
+  phone     String
+  address   String
+  product   String
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  warehouseId Int
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+
+  items OrderItem[]
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  sku       String   @unique
+  price     Float
+  stock     Int
+  createdAt DateTime @default(now())
+
+  items           OrderItem[]
+  warehouseStocks WarehouseStock[] // tambahin ini
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  price     Float // harga saat order (biar gak berubah kalau harga produk berubah)
+}
+
+model Warehouse {
+  id       Int              @id @default(autoincrement())
+  name     String
+  location String
+  stocks   WarehouseStock[]
+  orders   Order[] // relasi balik dari Order
+}
+
+model WarehouseStock {
+  id          Int       @id @default(autoincrement())
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   Int
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  warehouseId Int
+  stock       Int
+}
+
+enum Marketplace {
+  Shopee
+  TiktokShop
+  Tokopedia
+  Lazada
+}
+
+model Store {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  platform    Marketplace  // Enum for marketplace
+  owner       String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}

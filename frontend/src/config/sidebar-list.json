@@ -1,0 +1,264 @@
+[
+  {
+    "title": "Dashboard",
+    "icon": "Dashboard",
+    "path": "/dashboard"
+  },
+  {
+    "title": "Sales",
+    "icon": "LocalShipping",
+    "path": "/sales",
+    "children": [
+      {
+        "title": "Acquisition",
+        "path": "/sales/acquisition",
+        "children": [
+          {
+            "title": "Input Order Acquisition",
+            "path": "/sales/acquisition/input-order"
+          },
+          {
+            "title": "Lead Management",
+            "path": "/sales/acquisition/lead"
+          },
+          {
+            "title": "Campaign Marketing",
+            "path": "/sales/acquisition/campaign"
+          },
+          {
+            "title": "Sales Analytics",
+            "path": "/sales/acquisition/analytics"
+          }
+        ]
+      },
+      {
+        "title": "Retention",
+        "path": "/sales/retention",
+        "children": [
+          {
+            "title": "Input Order Retention",
+            "path": "/sales/retention/input-order"
+          },
+          {
+            "title": "Loyalty Program",
+            "path": "/sales/retention/loyalty"
+          },
+          {
+            "title": "Customer Follow-up",
+            "path": "/sales/retention/followup"
+          },
+          {
+            "title": "Feedback Management",
+            "path": "/sales/retention/feedback"
+          }
+        ]
+      },
+      {
+        "title": "Marketplace",
+        "path": "/sales/marketplace",
+        "children": [
+          {
+            "title": "Input Order Marketplace",
+            "path": "/sales/marketplace/input-order"
+          },
+          {
+            "title": "Marketplace Integration",
+            "path": "/sales/marketplace/integration"
+          },
+          {
+            "title": "Marketplace Performance Analysis",
+            "path": "/sales/marketplace/analytics"
+          },
+          {
+            "title": "Marketplace Product Settings",
+            "path": "/sales/marketplace/products"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Customer",
+    "icon": "Group",
+    "path": "/customer",
+    "children": [
+      {
+        "title": "Customer Data",
+        "path": "/customer/data"
+      },
+      {
+        "title": "Customer Segmentation",
+        "path": "/customer/segmentation"
+      },
+      {
+        "title": "Transaction History",
+        "path": "/customer/transactions"
+      },
+      {
+        "title": "Communication",
+        "path": "/customer/communication"
+      },
+      {
+        "title": "Support Ticket",
+        "path": "/customer/ticket"
+      }
+    ]
+  },
+  {
+    "title": "Product",
+    "icon": "Store",
+    "path": "/product",
+    "children": [
+      {
+        "title": "Product Catalog",
+        "path": "/product/catalog"
+      },
+      {
+        "title": "Product Categories",
+        "path": "/product/categories"
+      },
+      {
+        "title": "Supplier Management",
+        "path": "/product/suppliers"
+      },
+      {
+        "title": "Pricing Management",
+        "path": "/product/pricing"
+      }
+    ]
+  },
+  {
+    "title": "Warehouse & Shipping",
+    "icon": "Inventory",
+    "path": "/warehouse",
+    "children": [
+      {
+        "title": "Orders",
+        "path": "/warehouse/orders",
+        "children": [
+          {
+            "title": "Order Processing",
+            "path": "/warehouse/orders/processing"
+          },
+          {
+            "title": "Order Tracking",
+            "path": "/warehouse/orders/tracking"
+          },
+          {
+            "title": "Returns & Refunds",
+            "path": "/warehouse/orders/refund"
+          }
+        ]
+      },
+      {
+        "title": "Stock",
+        "path": "/warehouse/stock",
+        "children": [
+          {
+            "title": "Inventory Management",
+            "path": "/warehouse/stock/inventory"
+          },
+          {
+            "title": "Restock Alert",
+            "path": "/warehouse/stock/restock"
+          },
+          {
+            "title": "Stock Adjustment",
+            "path": "/warehouse/stock/adjustment"
+          }
+        ]
+      },
+      {
+        "title": "Shipping",
+        "path": "/warehouse/shipping",
+        "children": [
+          {
+            "title": "Shipping Providers",
+            "path": "/warehouse/shipping/providers"
+          },
+          {
+            "title": "Shipping Tracking",
+            "path": "/warehouse/shipping/tracking"
+          },
+          {
+            "title": "Shipping Labels",
+            "path": "/warehouse/shipping/labels"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Finance",
+    "icon": "Paid",
+    "path": "/finance",
+    "children": [
+      {
+        "title": "Invoices",
+        "path": "/finance/invoices"
+      },
+      {
+        "title": "Payments",
+        "path": "/finance/payments"
+      },
+      {
+        "title": "Financial Reports",
+        "path": "/finance/reports"
+      },
+      {
+        "title": "Expenses",
+        "path": "/finance/expenses"
+      },
+      {
+        "title": "Taxes",
+        "path": "/finance/taxes"
+      }
+    ]
+  },
+  {
+    "title": "Reports",
+    "icon": "Assessment",
+    "path": "/reports",
+    "children": [
+      {
+        "title": "Sales Analysis",
+        "path": "/reports/sales"
+      },
+      {
+        "title": "Profit Reports",
+        "path": "/reports/profit"
+      },
+      {
+        "title": "Product Performance Reports",
+        "path": "/reports/products"
+      },
+      {
+        "title": "Supplier Reports",
+        "path": "/reports/suppliers"
+      }
+    ]
+  },
+  {
+    "title": "Settings",
+    "icon": "Settings",
+    "path": "/settings",
+    "children": [
+      {
+        "title": "Business Profile",
+        "path": "/settings/profile"
+      },
+      {
+        "title": "User Management",
+        "path": "/settings/users"
+      },
+      {
+        "title": "API Integration",
+        "path": "/settings/api"
+      },
+      {
+        "title": "Notifications",
+        "path": "/settings/notifications"
+      }
+    ]
+  }
+]
