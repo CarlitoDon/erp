@@ -1,6 +1,6 @@
-// src/components/Sidebar.js
+// src/components/Sidebar/Sidebar.js
 
-import React, { useEffect, useRef, useState, useContext } from "react";
+import React, { useEffect, useRef, useState, useContext, useMemo } from "react";
 import {
   Drawer,
   List,
@@ -11,7 +11,7 @@ import {
   useTheme,
 } from "@mui/material";
 import * as Icons from "@mui/icons-material";
-import sidebarItems from "../../config/sidebar-list.json";
+import sidebarItems from "../../config/sidebar-list";
 import { ThemeContext } from "../../contexts/ThemeContext"; // Import ThemeContext
 import SidebarMenu from "./SidebarMenu"; // Import SidebarMenu
 
@@ -22,6 +22,12 @@ export default function Sidebar({ open, onClose }) {
   const theme = useTheme();
   const { mode, toggleMode } = useContext(ThemeContext); // Access theme context
   const [openMenus, setOpenMenus] = useState({});
+
+  // Memoize filteredSidebarItems to prevent unnecessary re-renders
+  const filteredSidebarItems = useMemo(
+    () => sidebarItems.filter((item) => item.showInSidebar !== false),
+    []
+  );
 
   // Close sidebar if clicked outside
   useEffect(() => {
@@ -75,9 +81,9 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Sidebar Menu */}
         <List sx={{ flexGrow: 1 }}>
-          {sidebarItems && sidebarItems.length > 0 ? (
+          {filteredSidebarItems && filteredSidebarItems.length > 0 ? (
             <SidebarMenu
-              items={sidebarItems}
+              items={filteredSidebarItems} // Use memoized items
               openMenus={openMenus}
               toggleMenu={toggleMenu}
               onClose={onClose}

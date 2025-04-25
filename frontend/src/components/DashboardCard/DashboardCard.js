@@ -1,8 +1,10 @@
 import React from "react";
 import { Card, CardContent, Typography } from "@mui/material";
-import { Link } from "react-router-dom"; // Untuk navigasi jika perlu
+import { useNavigate } from "react-router-dom"; // Menggunakan useNavigate untuk navigasi
 
 function DashboardCard({ title, value, to }) {
+  const navigate = useNavigate(); // Hook untuk navigasi
+
   return (
     <Card
       sx={{
@@ -17,7 +19,7 @@ function DashboardCard({ title, value, to }) {
           boxShadow: 6, // Efek hover dengan shadow lebih kuat
         },
       }}
-      onClick={() => to && window.location.replace(to)} // Jika ada 'to', pindah halaman
+      onClick={() => navigate(to)} // Navigasi langsung menggunakan 'to'
     >
       <CardContent>
         <Typography variant="h6" sx={{ mb: 1 }}>

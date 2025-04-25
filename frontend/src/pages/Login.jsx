@@ -18,6 +18,8 @@ import {
 } from "@mui/material";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { useAuth } from "../contexts/AuthContext";
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -31,21 +33,26 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const { login } = useAuth();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
+  
     try {
       const res = await axios.post(
         `${process.env.REACT_APP_API_URL}auth/login`,
         form
       );
-
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("username", res.data.username);
-      localStorage.setItem("isAdmin", res.data.isAdmin);
-
+  
+      // Ambil data dari respons
+      const { token, username, isAdmin } = res.data;
+  
+      // Gunakan context login
+      login(token, { username, isAdmin });
+  
+      // Redirect setelah login
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Gagal login");

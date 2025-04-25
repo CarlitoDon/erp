@@ -58,3 +58,22 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: "Terjadi kesalahan pada server" });
   }
 };
+
+exports.addStore = async (req, res) => {
+  const { name, platform, owner } = req.body;
+
+  try {
+    const newStore = await prisma.store.create({
+      data: {
+        name,
+        platform,
+        owner,
+      },
+    });
+
+    res.status(201).json({ message: "Store added successfully", store: newStore });
+  } catch (error) {
+    console.error("Error adding store:", error);
+    res.status(500).json({ message: "Failed to add store" });
+  }
+};
