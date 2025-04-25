@@ -2,9 +2,16 @@
 
 import { createContext, useMemo, useState } from "react";
 import { createTheme, ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
-import { colors } from "../styles/theme";
 
 export const ThemeContext = createContext();
+
+const colors = {
+  primary: "#4F46E5",
+  secondary: "#8B5CF6",
+  error: "#f44336",
+  backgroundLight: "#f9fafb",
+  backgroundDark: "#121212",
+};
 
 export default function ThemeProvider({ children }) {
   const [mode, setMode] = useState("light");
