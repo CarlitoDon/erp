@@ -6,9 +6,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-
-      <CssBaseline /> {/* buat reset style bawaan browser */}
-      <App />
-
+    <CssBaseline /> {/* buat reset style bawaan browser */}
+    <App />
   </React.StrictMode>
 );

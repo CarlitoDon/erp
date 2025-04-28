@@ -18,7 +18,7 @@ import * as XLSX from 'xlsx';
 
 const ImportShopeeOrder = () => {
     // ... (state lainnya tetap sama) ...
-    const [selectedFile, setSelectedFile] = useState(null);
+    const [setSelectedFile] = useState(null);
     const [parsedData, setParsedData] = useState([]);
     const [headers, setHeaders] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
