@@ -28,7 +28,7 @@ const routes = [
   },
   {
     path: "sales",
-    component: "Sales", 
+    component: "Sales",
     icon: "LocalShipping",
     isPrivate: true,
     showInSidebar: true,
@@ -36,7 +36,7 @@ const routes = [
     children: [
       {
         path: "acquisition",
-        component: "Acquisition", 
+        component: "Acquisition",
         showInSidebar: true,
         title: "Sales Acquisition",
         children: [
@@ -64,7 +64,7 @@ const routes = [
       },
       {
         path: "retention",
-        component: "Retention", 
+        component: "Retention",
         showInSidebar: true,
         title: "Sales Retention",
         children: [
@@ -92,7 +92,7 @@ const routes = [
       },
       {
         path: "marketplace",
-        component: "Marketplace", 
+        component: "Marketplace",
         showInSidebar: true,
         title: "Marketplace Sales",
         children: [
@@ -100,6 +100,23 @@ const routes = [
             path: "input-order",
             component: "InputOrderMarketplace",
             title: "Input Order (Marketplace)",
+            children: [
+              {
+                path: "shopee",
+                component: "ImportShopeeOrder",
+                title: "Import Order (Shopee)",
+              },
+              {
+                path: "tokopedia",
+                component: "ImportTokopediaOrder",
+                title: "Import Order (Tokopedia)",
+              },
+              {
+                path: "tiktokshop",
+                component: "ImportTiktokshopOrder",
+                title: "Import Order (TikTok Shop)",
+              },
+            ],
           },
           {
             path: "integration",
@@ -122,7 +139,7 @@ const routes = [
   },
   {
     path: "customer",
-    component: "Customer", 
+    component: "Customer",
     icon: "Group",
     isPrivate: true,
     showInSidebar: true,
@@ -162,7 +179,7 @@ const routes = [
   },
   {
     path: "product",
-    component: "Product", 
+    component: "Product",
     icon: "Store",
     isPrivate: true,
     showInSidebar: true,
@@ -196,7 +213,7 @@ const routes = [
   },
   {
     path: "warehouse",
-    component: "Warehouse", 
+    component: "Warehouse",
     icon: "Inventory",
     isPrivate: true,
     showInSidebar: true,
@@ -204,7 +221,7 @@ const routes = [
     children: [
       {
         path: "orders",
-        component: "Orders", 
+        component: "Orders",
         showInSidebar: true,
         title: "Warehouse Orders",
         children: [
@@ -227,7 +244,7 @@ const routes = [
       },
       {
         path: "stock",
-        component: "Stock", 
+        component: "Stock",
         showInSidebar: true,
         title: "Stock Management",
         children: [
@@ -250,7 +267,7 @@ const routes = [
       },
       {
         path: "shipping",
-        component: "Shipping", 
+        component: "Shipping",
         showInSidebar: true,
         title: "Shipping Management",
         children: [
@@ -275,7 +292,7 @@ const routes = [
   },
   {
     path: "finance",
-    component: "Finance", 
+    component: "Finance",
     icon: "Paid",
     isPrivate: true,
     showInSidebar: true,
@@ -315,7 +332,7 @@ const routes = [
   },
   {
     path: "reports",
-    component: "Reports", 
+    component: "Reports",
     icon: "Assessment",
     isPrivate: true,
     showInSidebar: true,
@@ -349,7 +366,7 @@ const routes = [
   },
   {
     path: "settings",
-    component: "Settings", 
+    component: "Settings",
     icon: "Settings",
     isPrivate: true,
     showInSidebar: true,
