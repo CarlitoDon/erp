@@ -133,6 +133,11 @@ const routes = [
             component: "MarketplaceProductSettings",
             title: "Marketplace Product Settings",
           },
+          {
+            path: "settings", // Path: /sales/marketplace/settings
+            component: "MarketplaceSettings", // Nama komponen baru
+            title: "Store Settings", // Judul untuk halaman/sidebar
+          },
         ],
       },
     ],

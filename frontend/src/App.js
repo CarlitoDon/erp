@@ -12,7 +12,7 @@ import ThemeProvider from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext"; // <-- 1. Import AuthProvider
 import routesConfig from "./routes/routes";
 import NotFound from "./pages/NotFound";
-import { PrivateRoute, PublicRoute } from './routes/RouteGuards';
+import { PrivateRoute, PublicRoute } from "./routes/RouteGuards";
 
 const getLazyComponent = (componentPath) => {
   if (!componentPath) {
@@ -47,38 +47,43 @@ const renderRoutes = (routes) => {
 
       // *** Pendekatan Alternatif (Lebih Sederhana untuk Nested): ***
       // Bungkus elemen komponen dengan guard jika diperlukan
-       // routeElement = <Route path={route.path} element={<PrivateRoute><LazyComponent /></PrivateRoute>} />;
-       // ^^ Tapi ini kurang ideal karena PrivateRoute harus handle children prop ^^
+      // routeElement = <Route path={route.path} element={<PrivateRoute><LazyComponent /></PrivateRoute>} />;
+      // ^^ Tapi ini kurang ideal karena PrivateRoute harus handle children prop ^^
 
-       // *** Pendekatan yang lebih umum di App.js (Lihat di bawah) ***
-
+      // *** Pendekatan yang lebih umum di App.js (Lihat di bawah) ***
     } else if (route.isPrivate === false) {
-       // Jika public, bungkus dengan PublicRoute (yang berisi Outlet)
-       // PublicRoute akan redirect jika sudah terotentikasi
+      // Jika public, bungkus dengan PublicRoute (yang berisi Outlet)
+      // PublicRoute akan redirect jika sudah terotentikasi
       routeElement = (
         <Route element={<PublicRoute />}>
-           <Route path={route.path} element={element} />
+          <Route path={route.path} element={element} />
         </Route>
       );
-       // routeElement = <Route path={route.path} element={<PublicRoute><LazyComponent /></PublicRoute>} />; // Alternatif kurang ideal
+      // routeElement = <Route path={route.path} element={<PublicRoute><LazyComponent /></PublicRoute>} />; // Alternatif kurang ideal
     } else {
       // Jika isPrivate tidak didefinisikan, anggap saja route biasa
       routeElement = <Route path={route.path} element={element} />;
     }
 
-
     // --- PENDEKATAN LEBIH BAIK & UMUM UNTUK GUARDS ---
     // Kita akan gunakan pendekatan ini daripada yang di atas
-    const guardedElement = route.isPrivate === true
-      ? <PrivateRoute><LazyComponent /></PrivateRoute> // PrivateRoute membungkus komponen
-      : route.isPrivate === false
-        ? <PublicRoute><LazyComponent /></PublicRoute> // PublicRoute membungkus komponen
-        : <LazyComponent />; // Tanpa guard
+    const guardedElement =
+      route.isPrivate === true ? (
+        <PrivateRoute>
+          <LazyComponent />
+        </PrivateRoute> // PrivateRoute membungkus komponen
+      ) : route.isPrivate === false ? (
+        <PublicRoute>
+          <LazyComponent />
+        </PublicRoute> // PublicRoute membungkus komponen
+      ) : (
+        <LazyComponent />
+      ); // Tanpa guard
 
     // Jika route punya anak (nested)
     if (route.children && route.children.length > 0) {
-       // Komponen Induk (LazyComponent) HARUS punya <Outlet />
-       // Guard diterapkan pada elemen induk ini
+      // Komponen Induk (LazyComponent) HARUS punya <Outlet />
+      // Guard diterapkan pada elemen induk ini
       return (
         <Route key={index} path={route.path} element={guardedElement}>
           {renderRoutes(route.children)} {/* Render anak secara rekursif */}
@@ -87,20 +92,22 @@ const renderRoutes = (routes) => {
     }
 
     // Jika tidak punya anak
-    return (
-      <Route key={index} path={route.path} element={guardedElement} />
-    );
-
+    return <Route key={index} path={route.path} element={guardedElement} />;
   });
 };
 
-
 const LoadingFallback = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 'calc(100vh - 64px)' }}>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "calc(100vh - 64px)",
+    }}
+  >
     Memuat...
   </div>
 );
-
 
 function App() {
   return (
@@ -113,7 +120,10 @@ function App() {
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {renderRoutes(routesConfig)}
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route
+                  path="/"
+                  element={<Navigate to="/dashboard" replace />}
+                />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
