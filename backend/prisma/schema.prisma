@@ -7,70 +7,85 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN
+  SALES_ACQUISITION
+  SALES_RETENTION
+  MARKETPLACE_MANAGER
+  WAREHOUSE_STAFF
+  FINANCE_STAFF // Opsional
+}
+
 model User {
-  id       Int     @id @default(autoincrement())
-  username String  @unique
-  password String
-  isAdmin  Boolean @default(false)
-
-  orders Order[] // relasi: satu user bisa punya banyak order
-}
-
-model Order {
   id        Int      @id @default(autoincrement())
-  source    String // Shopee, Tokopedia, dll
-  customer  String
-  phone     String
-  address   String
-  product   String
+  username  String   @unique
+  password  String
+  // isAdmin Boolean @default(false) // Ganti isAdmin dengan role
+  role      UserRole @default(SALES_ACQUISITION) // Tentukan default role yg paling umum/minim hak
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
-
-  warehouseId Int
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
-
-  items OrderItem[]
+  storeConnections StoreConnection[]
+  ordersCreated    Order[]           @relation("SalesRepOrders")
 }
 
-model Product {
-  id        Int      @id @default(autoincrement())
-  name      String
-  sku       String   @unique
-  price     Float
-  stock     Int
-  createdAt DateTime @default(now())
-
-  items           OrderItem[]
-  warehouseStocks WarehouseStock[] // tambahin ini
+// Enum baru untuk membedakan channel order
+enum OrderChannel {
+  MARKETPLACE
+  WHATSAPP_ACQUISITION
+  WHATSAPP_RETENTION
 }
 
-model OrderItem {
-  id        Int     @id @default(autoincrement())
-  order     Order   @relation(fields: [orderId], references: [id])
-  orderId   Int
-  product   Product @relation(fields: [productId], references: [id])
-  productId Int
-  quantity  Int
-  price     Float // harga saat order (biar gak berubah kalau harga produk berubah)
+// --- MODEL BARU: Customer ---
+model Customer {
+  id         Int      @id @default(autoincrement())
+  name       String
+  phone      String   @unique // Nomor telepon sebagai identifier utama?
+  email      String?  @unique
+  // Alamat bisa disimpan di sini atau model terpisah jika perlu multi-alamat
+  // Untuk simple, kita simpan alamat default di sini
+  address    String?
+  province   String?
+  city       String?
+  district   String?
+  village    String?
+  postalCode String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  orders Order[] // Semua order dari customer ini
+
+  // Jika perlu melacak siapa yg create/manage customer ini
+  // createdById Int?
+  // createdBy User? @relation("UserCreatedCustomers", fields: [createdById], references: [id])
 }
 
-model Warehouse {
-  id       Int              @id @default(autoincrement())
-  name     String
-  location String
-  stocks   WarehouseStock[]
-  orders   Order[] // relasi balik dari Order
+model StoreConnection {
+  id                Int           @id @default(autoincrement())
+  userId            Int
+  user              User          @relation(fields: [userId], references: [id])
+  platform          Marketplace
+  erpStoreName      String
+  platformStoreId   String?
+  platformStoreName String?
+  credentials       Json?
+  isActive          Boolean       @default(true)
+  isConnected       Boolean       @default(false)
+  lastSyncAt        DateTime?
+  syncType          StoreSyncType @default(MANUAL)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Order yg berasal dari koneksi marketplace ini
+  orders Order[] @relation("MarketplaceOrders") // Beri nama relasi
+
+  @@unique([userId, erpStoreName])
 }
 
-model WarehouseStock {
-  id          Int       @id @default(autoincrement())
-  product     Product   @relation(fields: [productId], references: [id])
-  productId   Int
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
-  warehouseId Int
-  stock       Int
+// Definisikan Enum baru di sini
+enum StoreSyncType {
+  API // Toko ini mendukung sinkronisasi via API
+  MANUAL // Toko ini memerlukan input data manual (misal: upload file order)
 }
 
 enum Marketplace {
@@ -80,11 +95,132 @@ enum Marketplace {
   Lazada
 }
 
-model Store {
-  id          Int          @id @default(autoincrement())
-  name        String       @unique
-  platform    Marketplace  // Enum for marketplace
-  owner       String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+model Order {
+  id Int @id @default(autoincrement())
+
+  // --- Informasi Asal & Channel ---
+  orderChannel      OrderChannel // Sumber order (WA, Marketplace, dll)
+  storeConnectionId Int? // NULLABLE: Hanya diisi jika orderChannel = MARKETPLACE
+  storeConnection   StoreConnection? @relation("MarketplaceOrders", fields: [storeConnectionId], references: [id]) // Relasi opsional
+  salesRepId        Int? // NULLABLE: Hanya diisi jika orderChannel = WHATSAPP_* (User yg input)
+  salesRep          User?            @relation("SalesRepOrders", fields: [salesRepId], references: [id]) // Relasi opsional ke User
+  platformOrderId   String // Tetap wajib, bisa diisi ID internal/unik untuk order WA
+
+  // --- Relasi ke Customer (WAJIB) ---
+  customerId Int
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  // --- Informasi Customer/Pengiriman (Snapshot saat Order) ---
+  // Hapus field customer, phone, address, dll. Ambil dari relasi Customer.
+  // Simpan snapshot alamat pengiriman jika bisa berbeda dari alamat default customer
+  shippingAddressSnapshot Json? // Menyimpan detail alamat pengiriman saat itu (nama, telp, alamat, dll)
+
+  // --- Timestamps ---
+  orderCreatedAt     DateTime // Waktu dibuat (di platform atau saat input manual)
+  paidAt             DateTime?
+  rtsAt              DateTime?
+  shippedAt          DateTime?
+  deliveredAt        DateTime?
+  completedAt        DateTime?
+  cancelledAt        DateTime?
+  cancellationReason String?
+
+  // --- Status ---
+  platformOrderStatus String // Status dari platform (jika ada)
+  erpOrderStatus      String? // Status internal ERP
+
+  // --- Financial ---
+  totalAmountPaidByBuyer      Float
+  shippingFeePaidByBuyer      Float
+  originalShippingFee         Float? @default(0)
+  shippingFeeSellerDiscount   Float? @default(0)
+  shippingFeePlatformDiscount Float? @default(0)
+  orderLevelPlatformDiscount  Float? @default(0)
+  orderLevelSellerDiscount    Float? @default(0)
+  voucherDiscountPlatform     Float? @default(0)
+  voucherDiscountSeller       Float? @default(0)
+  coinDiscount                Float? @default(0)
+  paymentMethodDiscount       Float? @default(0)
+  buyerServiceFee             Float? @default(0)
+  handlingFee                 Float? @default(0)
+  insuranceFee                Float? @default(0)
+
+  // --- Shipping & Payment ---
+  shippingProvider String?
+  trackingNumber   String?
+  paymentMethod    String?
+  packageId        String?
+
+  // --- Notes ---
+  buyerNote  String?
+  sellerNote String?
+
+  // --- Relasi Lain ---
+  warehouseId Int?
+  warehouse   Warehouse?  @relation(fields: [warehouseId], references: [id])
+  items       OrderItem[]
+
+  // --- ERP Timestamps ---
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // @@unique([orderChannel, platformOrderId]) // Mungkin? Jika platformOrderId unik per channel
+
+  // Ganti constraint unik jika diperlukan (platformOrderId mungkin tidak unik global)
+  // Pertimbangkan unik per channel atau sumber?
+  // Untuk simple, kita bisa buat platformOrderId unik per OrderChannel jika bukan marketplace
+  @@unique([storeConnectionId, platformOrderId]) // Tetap unik untuk marketplace
+}
+
+model OrderItem {
+  // Tidak perlu perubahan signifikan di sini untuk mengakomodasi sumber order
+  id                     Int     @id @default(autoincrement())
+  orderId                Int
+  order                  Order   @relation(fields: [orderId], references: [id])
+  productId              Int
+  product                Product @relation(fields: [productId], references: [id])
+  platformSkuId          String?
+  productNameAtOrder     String?
+  variationName          String?
+  quantity               Int
+  unitOriginalPrice      Float
+  unitPriceAfterDiscount Float
+  itemPlatformDiscount   Float   @default(0)
+  itemSellerDiscount     Float   @default(0)
+
+  @@unique([orderId, productId, platformSkuId]) // Mungkin perlu disesuaikan
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  sku       String   @unique
+  price     Float
+  stock     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items           OrderItem[]
+  warehouseStocks WarehouseStock[]
+}
+
+model Warehouse {
+  id        Int              @id @default(autoincrement())
+  name      String           @unique
+  location  String
+  stocks    WarehouseStock[]
+  orders    Order[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model WarehouseStock {
+  id          Int       @id @default(autoincrement())
+  productId   Int
+  product     Product   @relation(fields: [productId], references: [id])
+  warehouseId Int
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  stock       Int       @default(0)
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([productId, warehouseId])
 }
