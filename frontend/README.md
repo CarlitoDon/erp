@@ -68,3 +68,96 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+# Dokumentasi Role Pengguna dan Hak Akses ERP
+
+Dokumen ini mencatat berbagai role pengguna yang didefinisikan dalam sistem ERP ini beserta ringkasan tanggung jawab dan hak akses utama mereka. Ini berfungsi sebagai panduan tingkat tinggi untuk pengembangan dan pemeliharaan.
+
+*(Catatan: Hak akses detail diimplementasikan di backend melalui pemeriksaan role pada setiap endpoint API dan di frontend untuk menyembunyikan/menampilkan elemen UI secara kondisional.)*
+
+---
+
+## 1. `ADMIN` / `SUPER_ADMIN` (Super Administrator)
+
+*   **Tanggung Jawab:** Pengelolaan penuh dan konfigurasi sistem ERP.
+*   **Hak Akses Utama:**
+    *   Akses ke semua modul dan data tanpa batasan.
+    *   Manajemen Pengguna (membuat, mengedit, menghapus, mengubah role).
+    *   Manajemen semua Pengaturan (Koneksi Toko, Gudang, dll.).
+    *   Melihat semua jenis Pesanan (Marketplace, Akuisisi, Retensi).
+    *   Melihat semua Laporan dan Analitik.
+    *   Konfigurasi sistem dasar.
+*   **Batasan Utama:** Tidak ada batasan fungsional di dalam aplikasi.
+
+## 2. `SALES_ACQUISITION` (Tim Akuisisi / CS WA Baru)
+
+*   **Tanggung Jawab:** Menangani prospek baru dan menghasilkan penjualan awal melalui WhatsApp.
+*   **Hak Akses Utama:**
+    *   Mengelola Lead/Prospek (jika ada fiturnya).
+    *   **Membuat data Customer baru.**
+    *   **Membuat Pesanan** dengan channel `WHATSAPP_ACQUISITION`, menautkannya ke customer (baru/lama) dan ID Sales Rep sendiri.
+    *   Melihat daftar pesanan yang dibuatnya sendiri atau semua pesanan akuisisi.
+    *   Melihat detail Produk (harga, stok dasar).
+*   **Batasan Utama:**
+    *   Tidak bisa membuat pesanan dari channel lain (Marketplace, Retensi).
+    *   Tidak bisa mengelola Koneksi Toko Marketplace.
+    *   Tidak bisa mengelola Pengguna lain.
+    *   Akses terbatas ke data Customer yang tidak terkait langsung.
+
+## 3. `SALES_RETENTION` (Tim Retensi / CS WA Lama)
+
+*   **Tanggung Jawab:** Menangani pelanggan yang sudah ada, menjaga hubungan, dan menghasilkan penjualan berulang melalui WhatsApp.
+*   **Hak Akses Utama:**
+    *   Mencari dan Melihat data **Customer yang sudah ada**.
+    *   **Membuat Pesanan** dengan channel `WHATSAPP_RETENTION`, *harus* memilih Customer yang sudah ada, menautkannya ke ID Sales Rep sendiri.
+    *   Melihat daftar pesanan yang dibuatnya sendiri atau semua pesanan retensi.
+    *   Melihat riwayat pesanan Customer tertentu.
+    *   Melihat detail Produk.
+    *   Mengelola fitur Loyalitas/Feedback (jika ada).
+*   **Batasan Utama:**
+    *   **Tidak bisa membuat data Customer baru.**
+    *   Tidak bisa membuat pesanan dari channel lain (Marketplace, Akuisisi).
+    *   Tidak bisa mengelola Koneksi Toko Marketplace.
+    *   Tidak bisa mengelola Pengguna lain.
+
+## 4. `MARKETPLACE_MANAGER` (Pengelola Marketplace)
+
+*   **Tanggung Jawab:** Mengelola integrasi dan operasional toko di platform marketplace.
+*   **Hak Akses Utama:**
+    *   Melihat Dashboard Marketplace.
+    *   Mengelola **Koneksi Toko (`StoreConnection`)**: Menambah, mengedit (dengan batasan keamanan kredensial), menonaktifkan, menghapus.
+    *   Melihat daftar Pesanan dari channel `MARKETPLACE`.
+    *   Menggunakan fitur **Import Order Manual** untuk toko tipe `MANUAL`.
+    *   Melihat status/log sinkronisasi API.
+    *   Mengelola pengaturan Produk spesifik marketplace (jika ada).
+*   **Batasan Utama:**
+    *   Tidak bisa membuat pesanan WA (Akuisisi/Retensi).
+    *   Akses terbatas ke manajemen Customer.
+    *   Tidak bisa mengelola Pengguna lain.
+
+## 5. `WAREHOUSE_STAFF` (Staf Gudang / Fulfillment)
+
+*   **Tanggung Jawab:** Memproses pesanan untuk pengiriman dan mengelola inventaris fisik.
+*   **Hak Akses Utama:**
+    *   Melihat daftar Pesanan yang siap diproses/dikirim (berdasarkan status tertentu).
+    *   Mengupdate status Pesanan (misal: menjadi 'Shipped', memasukkan nomor resi).
+    *   Melihat dan Mengelola Stok Gudang (`WarehouseStock`).
+    *   Melakukan penyesuaian stok (Stock Opname, Barang Masuk/Keluar).
+*   **Batasan Utama:**
+    *   Tidak bisa membuat Pesanan baru.
+    *   Akses terbatas/tidak ada ke detail finansial pesanan (harga pokok, diskon detail?).
+    *   Tidak bisa mengelola Customer, Koneksi Toko, atau Pengguna.
+
+## 6. `FINANCE_STAFF` (Staf Keuangan - Opsional)
+
+*   **Tanggung Jawab:** Memantau aspek keuangan, pembayaran, dan rekonsiliasi.
+*   **Hak Akses Utama:**
+    *   Melihat semua detail finansial Pesanan.
+    *   Mengakses Laporan Penjualan dan Pembayaran.
+    *   Menandai status pembayaran (jika diperlukan).
+*   **Batasan Utama:** Akses terbatas ke fitur operasional non-keuangan (fulfillment, manajemen toko, dll.).
+
+---
+
+*Dokumentasi ini terakhir diperbarui pada: [Tanggal Hari Ini]*

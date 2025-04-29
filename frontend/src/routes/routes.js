@@ -35,6 +35,12 @@ const routes = [
     title: "Sales Management",
     children: [
       {
+        path: "orders", // Path: /sales/orders
+        component: "OrderListPage", // Komponen baru yang akan dibuat
+        title: "Daftar Pesanan",
+        showInSidebar: true // Tampilkan di sub-menu Sales jika ada
+      },
+      {
         path: "acquisition",
         component: "Acquisition",
         showInSidebar: true,
