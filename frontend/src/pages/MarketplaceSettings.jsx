@@ -2,211 +2,505 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  Container,
-  Paper,
   Typography,
-  Tabs,
-  Tab,
-  TextField,
   Button,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  IconButton,
   CircularProgress,
   Alert,
-  Grid,
-  Switch,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   FormControlLabel,
+  RadioGroup,
+  Radio,
+  FormLabel,
+  Stack,
 } from "@mui/material";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import StorefrontIcon from "@mui/icons-material/Storefront";
 
-// Placeholder untuk data settings (nantinya diambil dari API)
-const initialSettings = {
-  shopee: { connected: false, apiKey: "", shopId: "", autoSyncOrders: true },
-  tokopedia: { connected: false, apiKey: "", shopId: "", autoSyncOrders: false },
-  tiktok: { connected: false, apiKey: "", shopId: "", autoSyncOrders: true },
+const Marketplace = {
+  Shopee: "Shopee",
+  TiktokShop: "TiktokShop",
+  Tokopedia: "Tokopedia",
+  Lazada: "Lazada",
 };
 
-// Fungsi untuk mendapatkan komponen panel tab
-function TabPanel(props) {
-  const { children, value, index, ...other } = props;
+const StoreSyncType = {
+  API: "API",
+  MANUAL: "MANUAL",
+};
+
+const StoreConnectionForm = ({
+  open,
+  onClose,
+  onSubmit,
+  initialData,
+  isLoading,
+}) => {
+  const [formData, setFormData] = useState({
+    erpStoreName: "",
+    platform: "",
+    syncType: StoreSyncType.MANUAL,
+    platformStoreId: "",
+    platformStoreName: "",
+    apiKey: "",
+    apiSecret: "",
+  });
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        erpStoreName: initialData.erpStoreName || "",
+        platform: initialData.platform || "",
+        syncType: initialData.syncType || StoreSyncType.MANUAL,
+        platformStoreId: initialData.platformStoreId || "",
+        platformStoreName: initialData.platformStoreName || "",
+        apiKey: "",
+        apiSecret: "",
+      });
+    } else {
+      setFormData({
+        erpStoreName: "",
+        platform: "",
+        syncType: StoreSyncType.MANUAL,
+        platformStoreId: "",
+        platformStoreName: "",
+        apiKey: "",
+        apiSecret: "",
+      });
+    }
+    setFormError("");
+  }, [initialData, open]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSyncTypeChange = (event) => {
+    setFormData((prev) => ({
+      ...prev,
+      syncType: event.target.value,
+      apiKey: event.target.value === StoreSyncType.MANUAL ? "" : prev.apiKey,
+      apiSecret:
+        event.target.value === StoreSyncType.MANUAL ? "" : prev.apiSecret,
+    }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setFormError("");
+    if (!formData.erpStoreName || !formData.platform) {
+      setFormError("Nama Toko ERP dan Platform wajib diisi.");
+      return;
+    }
+    if (
+      formData.syncType === StoreSyncType.API &&
+      (!formData.apiKey || !formData.apiSecret)
+    ) {
+      setFormError("API Key dan Secret wajib diisi untuk sinkronisasi API.");
+      return;
+    }
+    onSubmit(formData);
+  };
+
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`marketplace-tabpanel-${index}`}
-      aria-labelledby={`marketplace-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-    </div>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        {initialData ? "Edit Store Connection" : "Add New Store Connection"}
+      </DialogTitle>
+      <Box component="form" onSubmit={handleSubmit}>
+        <DialogContent dividers>
+          <Stack spacing={3}>
+            {formError && <Alert severity="error">{formError}</Alert>}
+            <TextField
+              required
+              label="Nama Toko (di ERP)"
+              name="erpStoreName"
+              value={formData.erpStoreName}
+              onChange={handleChange}
+              fullWidth
+              disabled={isLoading}
+            />
+            <FormControl
+              required
+              fullWidth
+              disabled={isLoading || !!initialData}
+            >
+              <InputLabel id="platform-select-label">Platform</InputLabel>
+              <Select
+                labelId="platform-select-label"
+                label="Platform"
+                name="platform"
+                value={formData.platform}
+                onChange={handleChange}
+              >
+                {Object.values(Marketplace).map((platform) => (
+                  <MenuItem key={platform} value={platform}>
+                    {platform}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl component="fieldset" disabled={isLoading}>
+              <FormLabel component="legend">Tipe Sinkronisasi</FormLabel>
+              <RadioGroup
+                row
+                name="syncType"
+                value={formData.syncType}
+                onChange={handleSyncTypeChange}
+              >
+                <FormControlLabel
+                  value={StoreSyncType.MANUAL}
+                  control={<Radio />}
+                  label="Manual Input"
+                />
+                <FormControlLabel
+                  value={StoreSyncType.API}
+                  control={<Radio />}
+                  label="API Sync"
+                />
+              </RadioGroup>
+            </FormControl>
+
+            {formData.syncType === StoreSyncType.API && (
+              <>
+                <TextField
+                  label="Platform Store ID (Opsional)"
+                  name="platformStoreId"
+                  value={formData.platformStoreId}
+                  onChange={handleChange}
+                  fullWidth
+                  disabled={isLoading}
+                />
+                <TextField
+                  label="Platform Store Name (Opsional)"
+                  name="platformStoreName"
+                  value={formData.platformStoreName}
+                  onChange={handleChange}
+                  fullWidth
+                  disabled={isLoading}
+                />
+                <TextField
+                  required={!initialData}
+                  label="API Key"
+                  name="apiKey"
+                  value={formData.apiKey}
+                  onChange={handleChange}
+                  fullWidth
+                  type="password"
+                  disabled={isLoading || !!initialData}
+                  helperText={
+                    initialData
+                      ? "API Key tidak ditampilkan. Update via proses terpisah jika perlu."
+                      : ""
+                  }
+                />
+                <TextField
+                  required={!initialData}
+                  label="API Secret"
+                  name="apiSecret"
+                  value={formData.apiSecret}
+                  onChange={handleChange}
+                  fullWidth
+                  type="password"
+                  disabled={isLoading || !!initialData}
+                  helperText={
+                    initialData
+                      ? "API Secret tidak ditampilkan. Update via proses terpisah jika perlu."
+                      : ""
+                  }
+                />
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: "16px 24px" }}>
+          <Button onClick={onClose} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="contained" disabled={isLoading}>
+            {isLoading ? (
+              <CircularProgress size={24} />
+            ) : initialData ? (
+              "Save Changes"
+            ) : (
+              "Add Connection"
+            )}
+          </Button>
+        </DialogActions>
+      </Box>
+    </Dialog>
   );
-}
+};
 
 function MarketplaceSettings() {
-  const [selectedTab, setSelectedTab] = useState(0); // 0: Shopee, 1: Tokopedia, 2: TikTok
-  const [settings, setSettings] = useState(initialSettings);
-  const [loading, setLoading] = useState(false); // Untuk loading fetch/save
+  const [storeConnections, setStoreConnections] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingStore, setEditingStore] = useState(null);
 
-  // TODO: Nanti, gunakan useEffect untuk fetch settings dari API saat komponen mount
+  const fetchStoreConnections = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log("TODO: Fetch store connections from API");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const dummyData = [
+        {
+          id: 1,
+          userId: 1,
+          platform: Marketplace.Shopee,
+          erpStoreName: "Toko Shopee Utama",
+          syncType: StoreSyncType.API,
+          isActive: true,
+          isConnected: true,
+          platformStoreId: "12345",
+        },
+        {
+          id: 2,
+          userId: 1,
+          platform: Marketplace.Tokopedia,
+          erpStoreName: "Toko Coba Tokped",
+          syncType: StoreSyncType.MANUAL,
+          isActive: true,
+          isConnected: false,
+          platformStoreId: "67890",
+        },
+        {
+          id: 3,
+          userId: 1,
+          platform: Marketplace.TiktokShop,
+          erpStoreName: "TikTok Fun",
+          syncType: StoreSyncType.API,
+          isActive: false,
+          isConnected: false,
+          platformStoreId: "11223",
+        },
+        {
+          id: 4,
+          userId: 1,
+          platform: Marketplace.Shopee,
+          erpStoreName: "Shopee Gudang Baru",
+          syncType: StoreSyncType.MANUAL,
+          isActive: true,
+          isConnected: false,
+        },
+      ];
+      setStoreConnections(dummyData);
+    } catch (err) {
+      setError(err.message || "Could not fetch store connections.");
+      console.error("Fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // fetchMarketplaceSettings().then(data => setSettings(data)).catch(err => setError...);
+    fetchStoreConnections();
   }, []);
 
-  const handleTabChange = (event, newValue) => {
-    setSelectedTab(newValue);
-    setError(null); // Reset error/success saat ganti tab
+  const handleOpenAddModal = () => {
+    setEditingStore(null);
+    setIsModalOpen(true);
     setSuccess(null);
+    setError(null);
   };
 
-  // Placeholder untuk handle perubahan input
-  const handleInputChange = (marketplace, field, value) => {
-    setSettings((prev) => ({
-      ...prev,
-      [marketplace]: {
-        ...prev[marketplace],
-        [field]: value,
-      },
-    }));
+  const handleOpenEditModal = (store) => {
+    setEditingStore(store);
+    setIsModalOpen(true);
+    setSuccess(null);
+    setError(null);
   };
 
-   // Placeholder untuk handle toggle switch
-   const handleSwitchChange = (marketplace, field, checked) => {
-    setSettings((prev) => ({
-      ...prev,
-      [marketplace]: {
-        ...prev[marketplace],
-        [field]: checked,
-      },
-    }));
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingStore(null);
   };
 
-  // Placeholder untuk handle save/connect
-  const handleSaveChanges = (marketplace) => {
+  const handleFormSubmit = async (formData) => {
     setLoading(true);
     setError(null);
     setSuccess(null);
-    console.log("Saving settings for:", marketplace, settings[marketplace]);
-    // TODO: Panggil API untuk menyimpan settings[marketplace]
-    // saveMarketplaceSettings(marketplace, settings[marketplace])
-    //   .then(() => setSuccess(`${marketplace} settings saved!`))
-    //   .catch(err => setError(`Failed to save ${marketplace}: ${err.message}`))
-    //   .finally(() => setLoading(false));
+    const isEditing = !!editingStore;
+    const url = isEditing
+      ? `/api/store-connections/${editingStore.id}`
+      : "/api/store-connections";
+    const method = isEditing ? "PUT" : "POST";
 
-    // Simulasi sukses setelah 1 detik
-    setTimeout(() => {
-        setSuccess(`${marketplace.charAt(0).toUpperCase() + marketplace.slice(1)} settings saved successfully!`);
-        setLoading(false);
-    }, 1000);
+    console.log("TODO: Call API to save data", { method, url, data: formData });
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setSuccess(
+        `Store connection ${isEditing ? "updated" : "added"} successfully!`
+      );
+      handleCloseModal();
+      fetchStoreConnections();
+    } catch (err) {
+      setError(
+        err.message ||
+          `An error occurred while ${
+            isEditing ? "updating" : "adding"
+          } the connection.`
+      );
+      console.error("Submit error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const renderSettingsForm = (marketplaceKey) => {
-    const currentData = settings[marketplaceKey];
-    if (!currentData) return <Alert severity="warning">Configuration not available.</Alert>;
-
-    return (
-      <Box component="form" noValidate autoComplete="off">
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom>
-              {marketplaceKey.charAt(0).toUpperCase() + marketplaceKey.slice(1)} Connection
-            </Typography>
-             {/* Nanti bisa diganti logic autentikasi yg lebih kompleks */}
-             <Alert severity={currentData.connected ? "success" : "info"} sx={{ mb: 2}}>
-                Status: {currentData.connected ? "Connected" : "Not Connected"}
-             </Alert>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="API Key / Secret" // Sesuaikan labelnya
-              variant="outlined"
-              value={currentData.apiKey}
-              onChange={(e) => handleInputChange(marketplaceKey, "apiKey", e.target.value)}
-              disabled={loading}
-              type="password" // Sembunyikan API key
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <TextField
-              fullWidth
-              label="Shop ID / Identifier" // Sesuaikan labelnya
-              variant="outlined"
-              value={currentData.shopId}
-              onChange={(e) => handleInputChange(marketplaceKey, "shopId", e.target.value)}
-              disabled={loading}
-            />
-          </Grid>
-
-           <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ mt: 2}}>
-                 Synchronization
-              </Typography>
-              <FormControlLabel
-                 control={
-                    <Switch
-                       checked={currentData.autoSyncOrders}
-                       onChange={(e) => handleSwitchChange(marketplaceKey, 'autoSyncOrders', e.target.checked)}
-                       disabled={loading}
-                    />
-                 }
-                 label="Automatically Sync Orders"
-              />
-               {/* Tambahkan setting sync lainnya di sini (frekuensi, dll) */}
-           </Grid>
-
-          {/* ... Tambahkan field setting lainnya sesuai kebutuhan ... */}
-
-          <Grid item xs={12}>
-            <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-              <Button
-                variant="contained"
-                onClick={() => handleSaveChanges(marketplaceKey)}
-                disabled={loading}
-              >
-                {loading ? <CircularProgress size={24} /> : "Save Settings"}
-              </Button>
-               {/* Mungkin perlu tombol "Connect/Disconnect" terpisah */}
-            </Box>
-             {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-             {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
-          </Grid>
-        </Grid>
-      </Box>
-    );
+  const handleDeleteStore = async (storeId) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this store connection? This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    console.log("TODO: Call API to delete store connection", storeId);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      setSuccess("Store connection deleted successfully!");
+      fetchStoreConnections();
+    } catch (err) {
+      setError(err.message || "Failed to delete store connection.");
+      console.error("Delete error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <Box> {/* Ganti Container/Paper jika layout induk sudah menyediakannya */}
-      <Typography variant="h5" component="h2" gutterBottom fontWeight="medium">
-        Marketplace Store Settings
-      </Typography>
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
+        <Typography variant="h5" component="h2" fontWeight="medium">
+          Marketplace Store Settings
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddCircleOutlineIcon />}
+          onClick={handleOpenAddModal}
+          disabled={loading}
+        >
+          Add Store Connection
+        </Button>
+      </Box>
 
-      <Paper elevation={2} sx={{ width: '100%', overflow: 'hidden' }}>
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            aria-label="Marketplace settings tabs"
-            variant="scrollable" // Jika tab banyak
-            scrollButtons="auto" // Jika tab banyak
-          >
-            <Tab label="Shopee" id="marketplace-tab-0" aria-controls="marketplace-tabpanel-0" />
-            <Tab label="Tokopedia" id="marketplace-tab-1" aria-controls="marketplace-tabpanel-1" />
-            <Tab label="TikTok Shop" id="marketplace-tab-2" aria-controls="marketplace-tabpanel-2" />
-            {/* Tambahkan Tab untuk marketplace lain jika perlu */}
-          </Tabs>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {success}
+        </Alert>
+      )}
+
+      {loading && !isModalOpen && (
+        <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+          <CircularProgress />
         </Box>
-        <TabPanel value={selectedTab} index={0}>
-          {renderSettingsForm("shopee")}
-        </TabPanel>
-        <TabPanel value={selectedTab} index={1}>
-          {renderSettingsForm("tokopedia")}
-        </TabPanel>
-        <TabPanel value={selectedTab} index={2}>
-          {renderSettingsForm("tiktok")}
-        </TabPanel>
-         {/* Tambahkan TabPanel untuk marketplace lain */}
-      </Paper>
+      )}
+
+      {!loading && storeConnections.length === 0 && (
+        <Typography sx={{ textAlign: "center", my: 3 }}>
+          No store connections found. Add your first store!
+        </Typography>
+      )}
+
+      {!loading && storeConnections.length > 0 && (
+        <Paper elevation={2}>
+          <List disablePadding>
+            {storeConnections.map((store, index) => (
+              <ListItem
+                key={store.id}
+                divider={index < storeConnections.length - 1}
+                secondaryAction={
+                  <Box>
+                    <IconButton
+                      edge="end"
+                      aria-label="edit"
+                      onClick={() => handleOpenEditModal(store)}
+                      disabled={loading}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      sx={{ ml: 1 }}
+                      onClick={() => handleDeleteStore(store.id)}
+                      disabled={loading}
+                    >
+                      <DeleteIcon color="error" />
+                    </IconButton>
+                  </Box>
+                }
+              >
+                <ListItemAvatar>
+                  <Avatar
+                    sx={{
+                      bgcolor: store.isActive ? "primary.light" : "grey.400",
+                    }}
+                  >
+                    <StorefrontIcon fontSize="small" />
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={store.erpStoreName}
+                  secondary={`${store.platform} - ${store.syncType}${
+                    store.syncType === StoreSyncType.API
+                      ? store.isConnected
+                        ? " (Connected)"
+                        : " (Disconnected)"
+                      : ""
+                  }`}
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
+      )}
+
+      <StoreConnectionForm
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleFormSubmit}
+        initialData={editingStore}
+        isLoading={loading}
+      />
     </Box>
   );
 }

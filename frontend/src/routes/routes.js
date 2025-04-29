@@ -97,6 +97,12 @@ const routes = [
         title: "Marketplace Sales",
         children: [
           {
+            index: true, // Menandakan ini rute default untuk /sales/marketplace
+            component: "MarketplaceOverview", // Komponen baru untuk konten overview
+            title: "Marketplace Overview", // Opsional: Judul spesifik jika perlu
+            showInSidebar: false
+          },
+          {
             path: "input-order",
             component: "InputOrderMarketplace",
             title: "Input Order (Marketplace)",
