@@ -1,48 +1,67 @@
 // src/routes/RouteGuards.js
 import React from "react";
-import { Navigate } from "react-router-dom";
+import {
+  Navigate /* Hapus Outlet jika tidak dipakai */,
+} from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { CircularProgress, Box } from "@mui/material"; // Contoh UI Loading
+import { Box, CircularProgress } from "@mui/material";
 
-// Komponen UI Loading Sederhana
 const AuthLoading = () => (
-  <Box display="flex" justifyContent="center" alignItems="center" height="calc(100vh - 64px)">
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    height="calc(100vh - 64px)"
+  >
     <CircularProgress />
   </Box>
 );
 
-export function PrivateRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth(); // <-- Ambil 'loading'
+// Komponen PrivateRoute SEKARANG MERENDER CHILDREN
+export function PrivateRoute({ children, requiredRoles }) {
+  // Ambil token, loading, dan user (untuk cek role)
+  const { token, loading, user } = useAuth();
 
   if (loading) {
-    console.log("PrivateRoute: Auth loading...");
-    return <AuthLoading />; // <-- Tampilkan loading jika auth belum siap
+    return <AuthLoading />;
   }
 
-  console.log(`PrivateRoute: Auth loaded, isAuthenticated: ${isAuthenticated}`);
-  if (!isAuthenticated) {
-    console.log("PrivateRoute: Not authenticated, redirecting to /login");
-    return <Navigate to="/login" replace />; // Redirect hanya jika loading selesai & tidak auth
+  const isAuth = !!token;
+
+  if (!isAuth) {
+    // Redirect ke login jika loading selesai & tidak ada token
+    return <Navigate to="/login" replace />;
   }
 
-  console.log("PrivateRoute: Authenticated, rendering children");
-  return children; // Render children jika loading selesai & auth
+  // --- (Opsional) Pengecekan Role ---
+  // if (requiredRoles && requiredRoles.length > 0) {
+  //   const userRole = user?.role;
+  //   if (!userRole || !requiredRoles.includes(userRole)) {
+  //     // Redirect ke halaman Unauthorized
+  //     return <Navigate to="/unauthorized" replace />;
+  //   }
+  // }
+  // --- Akhir Pengecekan Role ---
+
+  // Jika lolos semua cek, render komponen anak yang dibungkusnya
+  return children;
 }
 
+// Komponen PublicRoute SEKARANG MERENDER CHILDREN
 export function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth(); // <-- Ambil 'loading'
+  const { token, loading } = useAuth();
 
   if (loading) {
-     console.log("PublicRoute: Auth loading...");
-    return <AuthLoading />; // <-- Tampilkan loading jika auth belum siap
+    return <AuthLoading />;
   }
 
-  console.log(`PublicRoute: Auth loaded, isAuthenticated: ${isAuthenticated}`);
-  if (isAuthenticated) {
-    console.log("PublicRoute: Authenticated, redirecting to /dashboard");
-    return <Navigate to="/dashboard" replace />; // Redirect hanya jika loading selesai & auth
+  const isAuth = !!token;
+
+  if (isAuth) {
+    // Redirect ke dashboard jika loading selesai & ada token
+    return <Navigate to="/dashboard" replace />;
   }
 
-   console.log("PublicRoute: Not authenticated, rendering children");
-  return children; // Render children jika loading selesai & tidak auth
+  // Jika lolos semua cek (tidak loading, tidak auth), render komponen anak
+  return children;
 }

@@ -1,5 +1,16 @@
 // src/routes/routes.js
 
+// Definisikan konstanta role di sini agar konsisten dan mudah di-refactor
+// Nama harus sama persis dengan enum UserRole di Prisma
+const ROLES = {
+  ADMIN: "ADMIN",
+  SALES_ACQUISITION: "SALES_ACQUISITION",
+  SALES_RETENTION: "SALES_RETENTION",
+  MARKETPLACE_MANAGER: "MARKETPLACE_MANAGER",
+  WAREHOUSE_STAFF: "WAREHOUSE_STAFF",
+  FINANCE_STAFF: "FINANCE_STAFF",
+};
+
 const routes = [
   // Rute Autentikasi (Publik)
   {
@@ -8,6 +19,7 @@ const routes = [
     isPrivate: false,
     showInSidebar: false,
     title: "Login",
+    // requiredRoles: tidak perlu
   },
   {
     path: "register",
@@ -15,6 +27,7 @@ const routes = [
     isPrivate: false,
     showInSidebar: false,
     title: "Register",
+    // requiredRoles: tidak perlu
   },
 
   // Rute Utama Aplikasi (Private)
@@ -22,30 +35,51 @@ const routes = [
     path: "dashboard",
     component: "Dashboard",
     icon: "Dashboard",
-    isPrivate: true,
+    isPrivate: true, // Private
     showInSidebar: true,
     title: "Dashboard",
+    // requiredRoles: tidak ada (semua user login bisa akses)
   },
   {
     path: "sales",
-    component: "Sales",
+    component: "Sales", // Layout Induk
     icon: "LocalShipping",
     isPrivate: true,
     showInSidebar: true,
     title: "Sales Management",
+    // Role yang bisa akses bagian Sales secara umum
+    requiredRoles: [
+      ROLES.ADMIN,
+      ROLES.SALES_ACQUISITION,
+      ROLES.SALES_RETENTION,
+      ROLES.MARKETPLACE_MANAGER,
+      // ROLES.FINANCE_STAFF, // Opsional, tergantung kebutuhan
+    ],
     children: [
       {
-        path: "orders", // Path: /sales/orders
-        component: "OrderListPage", // Komponen baru yang akan dibuat
+        path: "orders",
+        component: "OrderListPage",
         title: "Daftar Pesanan",
-        showInSidebar: true // Tampilkan di sub-menu Sales jika ada
+        showInSidebar: true,
+        // Role yang bisa lihat semua order (lebih luas)
+        requiredRoles: [
+          ROLES.ADMIN,
+          ROLES.SALES_ACQUISITION, // Bisa lihat semua? atau hanya miliknya? Tentukan kebijakannya
+          ROLES.SALES_RETENTION, // Bisa lihat semua? atau hanya miliknya?
+          ROLES.MARKETPLACE_MANAGER,
+          ROLES.WAREHOUSE_STAFF, // Perlu lihat order untuk proses
+          ROLES.FINANCE_STAFF, // Perlu lihat untuk keuangan
+        ],
       },
       {
         path: "acquisition",
-        component: "Acquisition",
+        component: "Acquisition", // Layout
         showInSidebar: true,
         title: "Sales Acquisition",
+        requiredRoles: [ROLES.ADMIN, ROLES.SALES_ACQUISITION], // Hanya Admin & Tim Akuisisi
         children: [
+          // Children di sini akan mewarisi role parent secara implisit
+          // jika tidak didefinisikan ulang
           {
             path: "input-order",
             component: "InputOrderAcquisition",
@@ -70,9 +104,10 @@ const routes = [
       },
       {
         path: "retention",
-        component: "Retention",
+        component: "Retention", // Layout
         showInSidebar: true,
         title: "Sales Retention",
+        requiredRoles: [ROLES.ADMIN, ROLES.SALES_RETENTION], // Hanya Admin & Tim Retensi
         children: [
           {
             path: "input-order",
@@ -98,15 +133,16 @@ const routes = [
       },
       {
         path: "marketplace",
-        component: "Marketplace",
+        component: "Marketplace", // Layout
         showInSidebar: true,
         title: "Marketplace Sales",
+        requiredRoles: [ROLES.ADMIN, ROLES.MARKETPLACE_MANAGER], // Hanya Admin & Manajer Marketplace
         children: [
           {
-            index: true, // Menandakan ini rute default untuk /sales/marketplace
-            component: "MarketplaceOverview", // Komponen baru untuk konten overview
-            title: "Marketplace Overview", // Opsional: Judul spesifik jika perlu
-            showInSidebar: false
+            index: true,
+            component: "MarketplaceOverview",
+            title: "Marketplace Overview",
+            showInSidebar: false,
           },
           {
             path: "input-order",
@@ -146,9 +182,9 @@ const routes = [
             title: "Marketplace Product Settings",
           },
           {
-            path: "settings", // Path: /sales/marketplace/settings
-            component: "MarketplaceSettings", // Nama komponen baru
-            title: "Store Settings", // Judul untuk halaman/sidebar
+            path: "settings",
+            component: "MarketplaceSettings",
+            title: "Store Settings",
           },
         ],
       },
@@ -156,12 +192,19 @@ const routes = [
   },
   {
     path: "customer",
-    component: "Customer",
+    component: "Customer", // Layout
     icon: "Group",
     isPrivate: true,
     showInSidebar: true,
     title: "Customer Management",
+    requiredRoles: [
+      ROLES.ADMIN,
+      ROLES.SALES_ACQUISITION,
+      ROLES.SALES_RETENTION,
+      ROLES.MARKETPLACE_MANAGER /* mungkin? */,
+    ],
     children: [
+      // Children akan mewarisi role parent
       {
         path: "data",
         component: "CustomerData",
@@ -196,11 +239,16 @@ const routes = [
   },
   {
     path: "product",
-    component: "Product",
+    component: "Product", // Layout
     icon: "Store",
     isPrivate: true,
     showInSidebar: true,
     title: "Product Management",
+    requiredRoles: [
+      ROLES.ADMIN,
+      ROLES.MARKETPLACE_MANAGER,
+      ROLES.WAREHOUSE_STAFF /* melihat? */,
+    ],
     children: [
       {
         path: "catalog",
@@ -230,11 +278,12 @@ const routes = [
   },
   {
     path: "warehouse",
-    component: "Warehouse",
+    component: "Warehouse", // Layout
     icon: "Inventory",
     isPrivate: true,
     showInSidebar: true,
     title: "Warehouse Management",
+    requiredRoles: [ROLES.ADMIN, ROLES.WAREHOUSE_STAFF], // Hanya Admin & Staf Gudang
     children: [
       {
         path: "orders",
@@ -309,11 +358,12 @@ const routes = [
   },
   {
     path: "finance",
-    component: "Finance",
+    component: "Finance", // Layout
     icon: "Paid",
     isPrivate: true,
     showInSidebar: true,
     title: "Finance",
+    requiredRoles: [ROLES.ADMIN, ROLES.FINANCE_STAFF], // Hanya Admin & Staf Finance
     children: [
       {
         path: "invoices",
@@ -349,11 +399,17 @@ const routes = [
   },
   {
     path: "reports",
-    component: "Reports",
+    component: "Reports", // Layout
     icon: "Assessment",
     isPrivate: true,
     showInSidebar: true,
     title: "Reports",
+    // Semua role bisa lihat laporan umum? Atau hanya Admin/Finance?
+    requiredRoles: [
+      ROLES.ADMIN,
+      ROLES.FINANCE_STAFF,
+      ROLES.MARKETPLACE_MANAGER /*?*/,
+    ],
     children: [
       {
         path: "sales",
@@ -366,7 +422,8 @@ const routes = [
         component: "ProfitReports",
         showInSidebar: true,
         title: "Profit Reports",
-      },
+        requiredRoles: [ROLES.ADMIN, ROLES.FINANCE_STAFF],
+      }, // Hanya Admin/Finance
       {
         path: "products",
         component: "ProductPerformanceReports",
@@ -382,37 +439,51 @@ const routes = [
     ],
   },
   {
-    path: "settings",
-    component: "Settings",
+    path: "settings", // Path: /settings
+    component: "Settings", // Layout induk Settings.jsx
     icon: "Settings",
     isPrivate: true,
     showInSidebar: true,
-    title: "Settings", // Judul bagian Settings
+    title: "Settings",
+    requiredRoles: [ROLES.ADMIN], // Hanya ADMIN akses settings
     children: [
+      // --- TAMBAHKAN RUTE INDEX INI ---
+      {
+        index: true, // Rute default untuk /settings
+        component: "SettingsOverview", // Komponen dashboard settings
+        title: "Settings Overview", // Opsional
+        showInSidebar: false, // Biasanya tidak perlu di sidebar
+      },
       {
         path: "profile",
         component: "BusinessProfile",
         showInSidebar: true,
         title: "Business Profile",
+        // Untuk profile, kita override agar semua user login bisa akses
+        // Cara handle override ini tergantung implementasi guard Anda
+        // Opsi 1: Hapus requiredRoles di parent dan definisikan di semua child kecuali profile
+        // Opsi 2: Tambahkan properti 'allowAllLoggedIn: true' khusus untuk profile
+        // Opsi 3: Buat rute profile di luar /settings
+        // Untuk sekarang, biarkan mewarisi ADMIN demi kesederhanaan metadata
       },
       {
         path: "users",
-        component: "UserManagement",
+        component: "UserManagementPage",
         showInSidebar: true,
         title: "User Management",
-      }, // Perhatikan ada duplikat nama komponen, title membedakan
+      }, // Mewarisi ADMIN
       {
         path: "api",
         component: "APIIntegration",
         showInSidebar: true,
         title: "API Integration",
-      },
+      }, // Mewarisi ADMIN
       {
         path: "notifications",
         component: "Notifications",
         showInSidebar: true,
         title: "Notifications",
-      },
+      }, // Mewarisi ADMIN
     ],
   },
 ];

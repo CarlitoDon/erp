@@ -5,112 +5,112 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate
+  Navigate,
+  Outlet,
 } from "react-router-dom";
+
+// Komponen UI & Layout
 import Navbar from "./components/Navbar/Navbar";
-import ThemeProvider from "./contexts/ThemeContext";
-import { AuthProvider } from "./contexts/AuthContext";
-import routesConfig from "./routes/routes";
 import NotFound from "./pages/NotFound";
+// import LoadingFallback from "./components/LoadingFallback"; // Hapus impor ini
+
+// Konteks & Tema
+import ThemeProvider from "./contexts/ThemeContext"; // 1. Import ThemeProvider dari context Anda
+import { AuthProvider } from "./contexts/AuthContext";
+
+// Routing & Guards
+import routesConfig from "./routes/routes";
 import { PrivateRoute, PublicRoute } from "./routes/RouteGuards";
 
+// --- Fungsi Helper Render Rute (Tetap sama) ---
 const getLazyComponent = (componentPath) => {
   if (!componentPath) {
     console.error("Component path is missing in route configuration.");
-    return () => <div>Error: Komponen tidak terdefinisi</div>;
+    return () => (
+      <div>Error: Komponen tidak terdefinisi dalam konfigurasi rute.</div>
+    );
   }
-
-  // Anda bisa menyederhanakan penanganan error lazy load sedikit
   return lazy(() =>
     import(`./pages/${componentPath}`).catch((error) => {
       console.error(`Gagal load komponen: ${componentPath}`, error);
-      // Return komponen yang valid dengan export default
       return { default: () => <NotFound /> };
     })
   );
 };
 
-// --- Perbaikan Fungsi renderRoutes ---
 const renderRoutes = (routes) => {
   return routes.map((route, index) => {
-    // 1. Dapatkan komponen lazy
     const LazyComponent = getLazyComponent(route.component);
 
-    // 2. Tentukan elemen yang sudah diguard (jika perlu) *SEBELUM* digunakan
-    const guardedElement =
+    const elementWithGuard =
       route.isPrivate === true ? (
-        <PrivateRoute> {/* Pastikan PrivateRoute merender children atau <Outlet/> */}
+        <PrivateRoute /* requiredRoles={route.requiredRoles} */>
           <LazyComponent />
         </PrivateRoute>
       ) : route.isPrivate === false ? (
-        <PublicRoute> {/* Pastikan PublicRoute merender children atau <Outlet/> */}
+        <PublicRoute>
           <LazyComponent />
         </PublicRoute>
       ) : (
-        <LazyComponent /> // Tanpa guard
+        <LazyComponent />
       );
 
-    // 3. Hapus blok 'let routeElement;' yang lama
-
-    // 4. Bangun elemen Route berdasarkan tipe rute (index, nested, atau biasa)
     if (route.index === true) {
-      // Rute Indeks: Gunakan prop 'index'
-      return <Route key={index} index element={guardedElement} />;
+      return <Route key={index} index element={elementWithGuard} />;
     } else if (route.children && route.children.length > 0) {
-      // Rute Nested Parent: Gunakan 'path' dan render children secara rekursif
-      // Komponen Induk (LazyComponent) di dalam guardedElement HARUS punya <Outlet />
       return (
-        <Route key={index} path={route.path} element={guardedElement}>
+        <Route key={index} path={route.path} element={elementWithGuard}>
           {renderRoutes(route.children)}
         </Route>
       );
     } else {
-      // Rute Biasa: Gunakan 'path'
-      return <Route key={index} path={route.path} element={guardedElement} />;
+      return <Route key={index} path={route.path} element={elementWithGuard} />;
     }
   });
 };
-// --- Akhir Perbaikan ---
+// --- Akhir Fungsi Helper Render Rute ---
 
-
+// 2. Definisikan LoadingFallback di sini lagi (atau pindah ke file komponen jika mau)
 const LoadingFallback = () => (
   <div
     style={{
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      height: "calc(100vh - 64px)", // Sesuaikan jika tinggi Navbar berbeda
-      width: '100%' // Pastikan fallback mengisi lebar
+      height: "calc(100vh - 64px)",
+      width: "100%",
     }}
   >
-    {/* Anda bisa menggunakan CircularProgress MUI di sini */}
+    {/* Anda bisa pakai CircularProgress dari MUI di sini */}
     Memuat...
   </div>
 );
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <Router>
-          <Navbar />
+    // Router tetap membungkus semua
+    <Router>
+      {/* AuthProvider di dalam Router */}
+      <AuthProvider>
+        {/* 3. Gunakan ThemeProvider dari context Anda */}
+        {/* ThemeProvider ini sudah berisi MuiThemeProvider dan CssBaseline */}
+        <ThemeProvider>
+          <Navbar /> {/* Navbar di dalam semua provider */}
           <main>
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {renderRoutes(routesConfig)}
-                {/* Redirect default dari root */}
                 <Route
                   path="/"
-                  element={<Navigate to="/dashboard" replace />} // Atau ke /login jika belum auth?
+                  element={<Navigate to="/dashboard" replace />}
                 />
-                {/* Rute fallback 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
           </main>
-        </Router>
-      </ThemeProvider>
-    </AuthProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

@@ -1,75 +1,92 @@
 // src/contexts/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { jwtDecode } from 'jwt-decode';
 
 export const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function AuthProviderComponent({ children }) { // Ganti nama komponen
+  const [token, setTokenState] = useState(() => localStorage.getItem("auth_token"));
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // <-- 1. Tambahkan state loading, default true
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // Panggil hook di dalam komponen
 
   useEffect(() => {
-    console.log("AuthProvider useEffect running...");
-    try {
-      const token = localStorage.getItem("auth_token");
-      if (token) {
-        console.log("Token found, setting authenticated");
-        // Di aplikasi nyata, validasi token ke backend di sini
-        setIsAuthenticated(true);
-        setUser({
-          name: localStorage.getItem("username") || "User",
-          isAdmin: localStorage.getItem("isAdmin") === "true",
-        });
-      } else {
-        console.log("No token found, setting not authenticated");
-        setIsAuthenticated(false);
-        setUser(null);
-      }
-    } catch (error) {
-       console.error("Error reading auth token from localStorage:", error);
-       setIsAuthenticated(false);
-       setUser(null);
-    } finally {
-       console.log("Auth check finished, setting loading to false");
-       setLoading(false); // <-- 2. Set loading false SETELAH pengecekan selesai
-    }
-  }, []); // Dependensi kosong agar hanya jalan sekali saat mount
+    const currentToken = localStorage.getItem("auth_token");
+    if (currentToken) {
+      try {
+         const decodedToken = jwtDecode(currentToken);
+         const currentTime = Date.now() / 1000;
 
-  const login = (token, userData) => {
-    localStorage.setItem("auth_token", token);
-    localStorage.setItem("username", userData?.name || "");
-    localStorage.setItem("isAdmin", userData?.isAdmin || false);
-    setIsAuthenticated(true);
-    setUser(userData);
-    // Tidak perlu setLoading(false) di sini karena login terjadi setelah load awal
+         if (decodedToken.exp < currentTime) {
+             console.log("Auth Token Expired");
+             handleLogout(null, false); // Panggil fungsi internal
+         } else {
+             setTokenState(currentToken);
+             setUser({
+                id: decodedToken.userId,
+                role: decodedToken.role,
+                username: localStorage.getItem("username") || "User"
+             });
+         }
+      } catch (error) {
+        console.error("Error decoding token or token invalid/expired:", error);
+        handleLogout(null, false); // Panggil fungsi internal
+      }
+    } else {
+      setTokenState(null);
+      setUser(null);
+    }
+    setLoading(false);
+  }, []);
+
+  const handleLogin = (newToken, userData) => { // Ganti nama fungsi
+    localStorage.setItem("auth_token", newToken);
+    localStorage.setItem("username", userData?.username || "");
+    localStorage.removeItem("isAdmin");
+    setTokenState(newToken);
+    setUser({
+        id: userData?.id,
+        username: userData?.username,
+        role: userData?.role
+    });
+    navigate("/dashboard", { replace: true });
   };
 
-  const logout = (navigate) => {
-    console.log("Logging out from context...");
+  const handleLogout = (navigateFunc = navigate, performNavigation = true) => { // Ganti nama fungsi
     localStorage.removeItem("auth_token");
     localStorage.removeItem("username");
     localStorage.removeItem("isAdmin");
-    setIsAuthenticated(false);
+    setTokenState(null);
     setUser(null);
-    if (navigate) {
-      console.log("Navigating to /login");
-      navigate("/login", { replace: true });
-    } else {
-      console.warn("Navigate function not provided to context logout");
+    if (performNavigation && navigateFunc) {
+      navigateFunc("/login", { replace: true });
+    } else if (performNavigation && !navigateFunc) {
+       console.warn("Navigate function not provided to context logout for navigation");
     }
-     // Tidak perlu setLoading(false) di sini
   };
 
-  // 3. Sertakan 'loading' dalam value context
+  const contextValue = {
+      user,
+      token,
+      loading,
+      login: handleLogin, // Assign fungsi internal ke value
+      logout: handleLogout // Assign fungsi internal ke value
+  };
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, logout }}>
-      {/* Tampilkan children hanya jika loading selesai, atau biarkan guard menanganinya */}
-      {/* {!loading ? children : <div>Loading Authentication...</div>} */}
-      {/* Atau cara yang lebih baik: biarkan guard yang handle loading */}
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );
 }
+
+// Wrapper component untuk memanggil hook di tempat yg benar
+export function AuthProvider({ children }) {
+    // BrowserRouter atau Router harus sudah ada di atas komponen ini di App.js
+    return <AuthProviderComponent>{children}</AuthProviderComponent>;
+}
+
 
 export function useAuth() {
   const context = useContext(AuthContext);
