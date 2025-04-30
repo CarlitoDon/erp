@@ -1,13 +1,11 @@
-//src/components/Sidebar/SidebarMenu.js
-
 import React, { useCallback, memo } from "react";
 import {
   List,
-  ListItem,
   ListItemText,
   ListItemIcon,
   Collapse,
   IconButton,
+  ListItemButton, // <-- Import ListItemButton
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import * as Icons from "@mui/icons-material";
@@ -29,19 +27,18 @@ const SidebarMenu = memo(
         }
 
         if (onClose) {
-           if (shouldNavigate) {
-             setTimeout(() => {
-                 onClose();
-             }, 50);
-           } else {
-             onClose();
-           }
+          if (shouldNavigate) {
+            setTimeout(() => {
+              onClose();
+            }, 50);
+          } else {
+            onClose();
+          }
         }
 
-        if (!path && toggleMenu) { 
-            toggleMenu(key);
+        if (!path && toggleMenu) {
+          toggleMenu(key);
         }
-
       },
       [navigate, location.pathname, toggleMenu, onClose]
     );
@@ -58,8 +55,7 @@ const SidebarMenu = memo(
       if (item.children && item.children.length > 0) {
         return (
           <React.Fragment key={key}>
-            <ListItem
-              button
+            <ListItemButton // <-- Ganti ListItem dengan ListItemButton
               onClick={() => handleItemClick(key, item.path)}
               selected={isActive}
               sx={{
@@ -81,7 +77,7 @@ const SidebarMenu = memo(
               >
                 {openMenus[key] ? <Icons.ExpandLess /> : <Icons.ExpandMore />}
               </IconButton>
-            </ListItem>
+            </ListItemButton> {/* <-- Tutup ListItemButton */}
             <Collapse in={openMenus[key]} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
                 <SidebarMenu
@@ -98,9 +94,8 @@ const SidebarMenu = memo(
       }
 
       return (
-        <ListItem
+        <ListItemButton // <-- Ganti ListItem dengan ListItemButton
           key={key}
-          button
           onClick={() => handleItemClick(key, item.path)}
           selected={location.pathname === item.path}
           sx={{
@@ -118,7 +113,7 @@ const SidebarMenu = memo(
           <ListItemText
             primary={item.title || item.component || "Untitled"}
           />
-        </ListItem>
+        </ListItemButton> // <-- Tutup ListItemButton
       );
     });
   }
