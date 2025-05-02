@@ -222,7 +222,7 @@ const AcquisitionOrderPage = () => {
             mb: 3,
           }}
         >
-          <Typography variant="h4" fontWeight="600" gutterBottom>
+          <Typography variant="h4" fontWeight="600" gutterBottom color="white">
             Form Input Order Akuisisi
           </Typography>
           <Typography variant="subtitle1">
