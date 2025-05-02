@@ -47,7 +47,6 @@ function Dashboard() {
       <Grid container spacing={2}>
         {items.map((item, idx) => (
           <Grid
-            item
             columns={12}
             key={idx}
             sx={{

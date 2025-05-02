@@ -42,10 +42,10 @@ const Login = () => {
   
     try {
       const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}auth/login`,
+        `${import.meta.env.VITE_API_URL}auth/login`,
         form
       );
-  
+      
       // Ambil data dari respons
       const { token, username, isAdmin } = res.data;
   
@@ -56,6 +56,7 @@ const Login = () => {
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Gagal login");
+      console.error("Login error:", err);
     } finally {
       setIsLoading(false);
     }

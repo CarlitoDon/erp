@@ -22,7 +22,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import routesConfig from "./routes/routes";
 import { PrivateRoute, PublicRoute } from "./routes/RouteGuards";
 
-// --- Fungsi Helper Render Rute (Tetap sama) ---
+const pages = import.meta.glob("./pages/**/*.{js,jsx}", { eager: false });
+
 const getLazyComponent = (componentPath) => {
   if (!componentPath) {
     console.error("Component path is missing in route configuration.");
@@ -30,12 +31,20 @@ const getLazyComponent = (componentPath) => {
       <div>Error: Komponen tidak terdefinisi dalam konfigurasi rute.</div>
     );
   }
-  return lazy(() =>
-    import(`./pages/${componentPath}`).catch((error) => {
-      console.error(`Gagal load komponen: ${componentPath}`, error);
-      return { default: () => <NotFound /> };
-    })
-  );
+
+  // Path harus diawali "./pages/" dan pakai extension yang sesuai
+  const keyJsx   = `./pages/${componentPath}.jsx`;
+  const keyJs    = `./pages/${componentPath}.js`;
+  const importer = pages[keyJsx] || pages[keyJs];
+
+  if (!importer) {
+    console.warn(`Page not found: ${componentPath}`);
+    return () => <NotFound />;
+  }
+
+  // importer adalah function returning promise
+  const Lazy = lazy(importer);
+  return Lazy;
 };
 
 const renderRoutes = (routes) => {
