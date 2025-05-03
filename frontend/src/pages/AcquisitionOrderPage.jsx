@@ -1,5 +1,5 @@
 // src/pages/AcquisitionOrderPage.jsx
-import React, { useState, useEffect } from "react"; // Import useEffect
+import React, { useState, useEffect, useContext } from "react"; // Import useEffect
 import {
   TextField,
   Button,
@@ -18,6 +18,8 @@ import {
   Container,
   Chip,
   IconButton,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import PaymentIcon from "@mui/icons-material/Payment";
 
@@ -29,6 +31,10 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import NoteIcon from "@mui/icons-material/Note";
 import HomeIcon from "@mui/icons-material/Home";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+
+import { useNavigate } from "react-router-dom";
+
+import { useAuth } from "../contexts/AuthContext"; // Import context Auth
 
 const AcquisitionOrderPage = () => {
   // State untuk informasi customer (baru atau dipilih)
@@ -43,6 +49,12 @@ const AcquisitionOrderPage = () => {
   const [newCustomerDistrict, setNewCustomerDistrict] = useState("");
   const [newCustomerVillage, setNewCustomerVillage] = useState("");
   const [newCustomerPostalCode, setNewCustomerPostalCode] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(null);
+
+  const { token } = useAuth(); // Ambil token dari context Auth
+  const navigate = useNavigate(); // Untuk navigasi setelah submit
 
   // State untuk produk yang dipesan
   const [orderItems, setOrderItems] = useState([
@@ -167,38 +179,185 @@ const AcquisitionOrderPage = () => {
     setShippingProviderId(event.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const formData = {
-      isNewCustomer,
-      existingCustomer,
-      newCustomer: isNewCustomer
-        ? {
-            name: newCustomerName,
-            phone: newCustomerPhone,
-            email: newCustomerEmail,
-            address: newCustomerAddress,
-            province: newCustomerProvince,
-            city: newCustomerCity,
-            district: newCustomerDistrict,
-            village: newCustomerVillage,
-            postalCode: newCustomerPostalCode,
-          }
-        : null,
-      orderItems,
-      buyerNote,
-      sellerNote,
-      isDifferentShippingAddress,
-      shippingAddress: isDifferentShippingAddress ? shippingAddress : null,
-      shippingProviderId,
-      paymentMethod,
-      totalPayment,
-      // salesRepId akan diisi di backend berdasarkan user yang login
-      orderChannel: "WHATSAPP_ACQUISITION", // Default untuk form akuisisi
-      orderCreatedAt: new Date().toISOString(), // Waktu order dibuat
+    setSubmitError(null);
+    setSubmitSuccess(null);
+    setIsSubmitting(true);
+
+    if (!token) {
+      setSubmitError("Autentikasi dibutuhkan untuk menyimpan order.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 1. Validasi Frontend Sederhana (opsional, backend tetap validasi)
+    if (
+      orderItems.some(
+        (item) =>
+          !item.productId ||
+          !item.quantity ||
+          item.price === undefined ||
+          item.price < 0
+      )
+    ) {
+      setSubmitError(
+        "Pastikan semua item produk memiliki Produk ID, Kuantitas, dan Harga yang valid."
+      );
+      setIsSubmitting(false);
+      return;
+    }
+    if (!shippingProviderId) {
+      setSubmitError("Jasa kirim wajib dipilih.");
+      setIsSubmitting(false);
+      return;
+    }
+    // Validasi data customer baru
+    if (
+      !newCustomerName ||
+      !newCustomerPhone ||
+      !newCustomerAddress ||
+      !newCustomerProvince ||
+      !newCustomerCity ||
+      !newCustomerDistrict ||
+      !newCustomerVillage
+    ) {
+      setSubmitError(
+        "Data lengkap customer (Nama, Telepon, Alamat Detail) wajib diisi."
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 2. Siapkan Data Customer
+    const customerData = {
+      name: newCustomerName,
+      phone: newCustomerPhone,
+      email: newCustomerEmail || null,
+      address: newCustomerAddress,
+      province: newCustomerProvince,
+      city: newCustomerCity,
+      district: newCustomerDistrict,
+      village: newCustomerVillage,
+      postalCode: newCustomerPostalCode || null,
     };
-    console.log("Data form yang akan dikirim:", formData);
-    // TODO: Kirim data form ke backend API
+
+    // 3. Siapkan Snapshot Alamat Pengiriman
+    const finalShippingAddress = isDifferentShippingAddress
+      ? {
+          name: shippingAddress.name,
+          phone: shippingAddress.phone,
+          address: shippingAddress.address,
+          province: shippingAddress.province,
+          city: shippingAddress.city,
+          district: shippingAddress.district,
+          village: shippingAddress.village,
+          postalCode: shippingAddress.postalCode || null,
+        }
+      : customerData; // Jika sama, gunakan data customer
+
+    // Validasi alamat kirim jika beda
+    if (
+      isDifferentShippingAddress &&
+      (!finalShippingAddress.name ||
+        !finalShippingAddress.phone ||
+        !finalShippingAddress.address)
+    ) {
+      setSubmitError(
+        "Nama, Telepon, dan Alamat Pengiriman wajib diisi jika berbeda."
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    // 4. Siapkan Payload untuk API
+    const payload = {
+      // Backend akan handle pembuatan customer berdasarkan ini
+      newCustomer: customerData,
+      // Map orderItems ke format yg diharapkan (pastikan price adalah harga final per item)
+      orderItems: orderItems.map((item) => ({
+        productId: parseInt(item.productId) || 0, // Pastikan integer ID Produk
+        quantity: parseInt(item.quantity) || 0,
+        // Asumsikan item.price adalah harga satuan final
+        // Backend akan mengisi unitOriginalPrice dan unitPriceAfterDiscount
+        price: parseFloat(item.price) || 0,
+        note: item.note || null,
+      })),
+      buyerNote: buyerNote || null,
+      sellerNote: sellerNote || null,
+      shippingAddressSnapshot: finalShippingAddress, // Kirim snapshot alamat
+      shippingProviderId: parseInt(shippingProviderId) || null, // Pastikan integer
+      paymentMethod: paymentMethod || null,
+      orderChannel: "WHATSAPP_ACQUISITION", // Hardcode untuk halaman ini
+      // orderCreatedAt: new Date().toISOString(), // Backend bisa handle ini
+    };
+
+    console.log("Data form yang akan dikirim:", payload);
+
+    try {
+      const response = await fetch("/api/orders", {
+        // Target endpoint POST order
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // Sertakan token
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const responseData = await response.json(); // Coba baca JSON terlepas dari status
+
+      if (!response.ok) {
+        // Gunakan pesan error dari backend jika ada
+        throw new Error(
+          responseData.message ||
+            `Gagal menyimpan order (Status: ${response.status})`
+        );
+      }
+
+      // Sukses!
+      setSubmitSuccess(
+        `Order berhasil dibuat! (ID: ${responseData.order?.id || "N/A"})`
+      );
+      // Reset form (buat fungsi reset terpisah jika perlu)
+      setNewCustomerName("");
+      setNewCustomerPhone("");
+      setNewCustomerEmail("");
+      setNewCustomerAddress("");
+      setNewCustomerProvince("");
+      setNewCustomerCity("");
+      setNewCustomerDistrict("");
+      setNewCustomerVillage("");
+      setNewCustomerPostalCode("");
+      setOrderItems([{ productId: "", quantity: 1, price: 0, note: "" }]);
+      setBuyerNote("");
+      setSellerNote("");
+      setIsDifferentShippingAddress(false);
+      setShippingAddress({
+        name: "",
+        phone: "",
+        email: "",
+        address: "",
+        province: "",
+        city: "",
+        district: "",
+        village: "",
+        postalCode: "",
+      });
+      setShippingProviderId("");
+      setPaymentMethod("");
+      setTotalPayment("");
+
+      // Optional: Redirect ke halaman daftar order setelah beberapa detik
+      setTimeout(() => {
+        navigate("/sales/orders"); // Arahkan ke daftar order
+      }, 2000); // Delay 2 detik
+    } catch (err) {
+      console.error("Submit Order Error:", err);
+      setSubmitError(err.message || "Terjadi kesalahan saat menyimpan order.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -232,6 +391,18 @@ const AcquisitionOrderPage = () => {
 
         <Box sx={{ px: 4, pb: 4 }}>
           <form onSubmit={handleSubmit}>
+            {/* --- Tampilkan Alert Error/Sukses --- */}
+            {submitError && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {submitError}
+              </Alert>
+            )}
+            {submitSuccess && (
+              <Alert severity="success" sx={{ mb: 3 }}>
+                {submitSuccess}
+              </Alert>
+            )}
+
             {/* Informasi Customer */}
             <Card
               sx={{
@@ -274,7 +445,7 @@ const AcquisitionOrderPage = () => {
                   </FormControl>
 
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Nomor Telepon Customer"
@@ -294,7 +465,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Email Customer (Opsional)"
@@ -324,7 +495,7 @@ const AcquisitionOrderPage = () => {
                   </FormControl>
 
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Provinsi *"
@@ -339,7 +510,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Kota/Kabupaten *"
@@ -352,7 +523,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Kecamatan *"
@@ -367,7 +538,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Desa/Kelurahan *"
@@ -382,7 +553,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Kode Pos (Opsional)"
@@ -481,7 +652,7 @@ const AcquisitionOrderPage = () => {
                         </Box>
 
                         <Grid container spacing={2} alignItems="center">
-                          <Grid item xs={12} sm={6} md={3}>
+                          <Grid size={{ xs: 12, sm: 6, md: 3}}>
                             <FormControl fullWidth>
                               <TextField
                                 label="Nama Produk"
@@ -496,7 +667,7 @@ const AcquisitionOrderPage = () => {
                               />
                             </FormControl>
                           </Grid>
-                          <Grid item xs={6} sm={3} md={2}>
+                          <Grid size={{ xs: 12, sm: 3, md: 2 }}>
                             <FormControl fullWidth>
                               <TextField
                                 label="Kuantitas"
@@ -512,7 +683,7 @@ const AcquisitionOrderPage = () => {
                               />
                             </FormControl>
                           </Grid>
-                          <Grid item xs={6} sm={3} md={3}>
+                          <Grid size={{ xs: 6, sm: 3, md: 3 }}>
                             <FormControl fullWidth>
                               <TextField
                                 label="Harga per Item (Rp)"
@@ -528,7 +699,7 @@ const AcquisitionOrderPage = () => {
                               />
                             </FormControl>
                           </Grid>
-                          <Grid item xs={12} sm={6} md={4}>
+                          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                             <FormControl fullWidth>
                               <TextField
                                 label="Catatan Produk (Opsional)"
@@ -627,7 +798,7 @@ const AcquisitionOrderPage = () => {
 
                 <Box sx={{ p: 3 }}>
                   <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Catatan Pembeli (Opsional)"
@@ -643,7 +814,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Catatan Penjual (Internal, Opsional)"
@@ -755,7 +926,7 @@ const AcquisitionOrderPage = () => {
                       </FormControl>
 
                       <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Provinsi"
@@ -769,7 +940,7 @@ const AcquisitionOrderPage = () => {
                             />
                           </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Kota/Kabupaten"
@@ -783,7 +954,7 @@ const AcquisitionOrderPage = () => {
                             />
                           </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Kecamatan"
@@ -797,7 +968,7 @@ const AcquisitionOrderPage = () => {
                             />
                           </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Desa/Kelurahan"
@@ -811,7 +982,7 @@ const AcquisitionOrderPage = () => {
                             />
                           </FormControl>
                         </Grid>
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Kode Pos"
@@ -860,7 +1031,7 @@ const AcquisitionOrderPage = () => {
 
                 <Box sx={{ p: 3 }}>
                   <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Box
                         sx={{
                           display: "flex",
@@ -897,7 +1068,7 @@ const AcquisitionOrderPage = () => {
                       </FormControl>
                     </Grid>
 
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <Box
                         sx={{
                           display: "flex",
@@ -975,7 +1146,7 @@ const AcquisitionOrderPage = () => {
                 Ringkasan Order
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{ display: "flex", flexDirection: "column", gap: 1 }}
                   >
@@ -1000,7 +1171,7 @@ const AcquisitionOrderPage = () => {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Box
                     sx={{ display: "flex", flexDirection: "column", gap: 1 }}
                   >
@@ -1044,6 +1215,11 @@ const AcquisitionOrderPage = () => {
                     `0 4px 12px ${theme.palette.primary.main}4D`,
                 }}
               >
+                {isSubmitting ? (
+                  <CircularProgress size={24} sx={{ color: "white" }} />
+                ) : (
+                  "Simpan Order"
+                )}
                 Simpan Order
               </Button>
             </Box>
