@@ -1,7 +1,7 @@
 // src/pages/AcquisitionOrderPage.jsx
-import React, { useState, useEffect, useContext, useCallback } from "react"; // Import useEffect
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import {
-  Autocomplete,
+  Autocomplete, // Import Autocomplete
   TextField,
   Button,
   FormControl,
@@ -22,8 +22,6 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import PaymentIcon from "@mui/icons-material/Payment";
-
 // Import Ikon yang Digunakan
 import PersonIcon from "@mui/icons-material/Person";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
@@ -32,17 +30,15 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import NoteIcon from "@mui/icons-material/Note";
 import HomeIcon from "@mui/icons-material/Home";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import PaymentIcon from "@mui/icons-material/Payment"; // Import ikon pembayaran
 
 import { useNavigate } from "react-router-dom";
-
-import { useAuth } from "../contexts/AuthContext"; // Import context Auth
+import { useAuth } from "../contexts/AuthContext";
+import useDebounce from "../hooks/useDebounce"; // Asumsi hook debounce ada
 
 const AcquisitionOrderPage = () => {
   // State untuk informasi customer (baru atau dipilih)
-  const [productOptions, setProductOptions] = useState([]);
-  const [productLoading, setProductLoading] = useState(false);
-  const [productSearchTerm, setProductSearchTerm] = useState("");
-  const [isNewCustomer, setIsNewCustomer] = useState(false);
+  const [isNewCustomer, setIsNewCustomer] = useState(true);
   const [existingCustomer, setExistingCustomer] = useState("");
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
@@ -53,18 +49,10 @@ const AcquisitionOrderPage = () => {
   const [newCustomerDistrict, setNewCustomerDistrict] = useState("");
   const [newCustomerVillage, setNewCustomerVillage] = useState("");
   const [newCustomerPostalCode, setNewCustomerPostalCode] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
-  const [submitSuccess, setSubmitSuccess] = useState(null);
-
-  const { token } = useAuth(); // Ambil token dari context Auth
-  const navigate = useNavigate(); // Untuk navigasi setelah submit
 
   // State untuk produk yang dipesan
   const [orderItems, setOrderItems] = useState([
-    //   { productId: "", quantity: 1, note: "" },
-    // ]);
-    { product: null, quantity: 1, price: 0, note: "" },
+    { product: null, quantity: 1, price: 0, note: "" }, // Gunakan product: null
   ]);
 
   // State untuk catatan order
@@ -90,27 +78,32 @@ const AcquisitionOrderPage = () => {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [totalPayment, setTotalPayment] = useState("");
 
-  const handleAddItem = () => {
-    setOrderItems([
-      ...orderItems,
-      { product: null, quantity: 1, price: 0, note: "" },
-    ]);
-  };
+  // State untuk jasa kirim
+  const [shippingProviderId, setShippingProviderId] = useState("");
+  const [shippingProviders, setShippingProviders] = useState([]);
 
-  const handleRemoveItem = (index) => {
-    const newItems = [...orderItems];
-    newItems.splice(index, 1);
-    setOrderItems(newItems);
-  };
+  // State untuk UI & API
+  const [productOptions, setProductOptions] = useState([]);
+  const [productLoading, setProductLoading] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState(""); // State untuk input mentah
+  const debouncedSearchTerm = useDebounce(productSearchTerm, 500); // <-- Debounce nilai searchTerm
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(null);
+
+  const { token } = useAuth(); // Ambil token dari context Auth
+  const navigate = useNavigate(); // Untuk navigasi setelah submit
+
+  // --- Fungsi Fetch Opsi Produk ---
   const fetchProductOptions = useCallback(
-    async (searchTerm) => {
-      if (!token || searchTerm.length < 2) {
-        // Hanya cari jika > 1 karakter & ada token
-        setProductOptions([]); // Kosongkan opsi jika search term pendek
+    async (searchTerm, index) => {
+      // Terima index jika perlu state per baris
+      if (!token || !searchTerm || searchTerm.length < 2) {
+        setProductOptions([]); // Reset jika search term pendek
         return;
       }
-      setProductLoading(true);
+      setProductLoading(true); // Set loading global (atau per baris jika state terpisah)
       try {
         const response = await fetch(
           `/api/products/search?q=${encodeURIComponent(searchTerm)}`,
@@ -120,43 +113,103 @@ const AcquisitionOrderPage = () => {
         );
         if (!response.ok) throw new Error("Gagal mencari produk");
         const data = await response.json();
-        setProductOptions(data);
+        setProductOptions(data || []); // Pastikan selalu array
       } catch (error) {
         console.error("Error fetching product options:", error);
-        setProductOptions([]); // Kosongkan jika error
+        setProductOptions([]);
       } finally {
         setProductLoading(false);
       }
     },
     [token]
-  ); // Depend on token
+  );
 
-  // --- Handler untuk Autocomplete ---
+  // --- useEffect untuk memanggil fetch saat debouncedSearchTerm berubah ---
+  useEffect(() => {
+    // Panggil fetchProductOptions dengan nilai yang sudah di-debounce
+    fetchProductOptions(debouncedSearchTerm);
+  }, [debouncedSearchTerm, fetchProductOptions]); // Dependensi pada nilai debounce & fungsi fetch
+
+  // --- Handler untuk Autocomplete (hanya update searchTerm) ---
   const handleProductInputChange = (event, newInputValue) => {
+    // Update state searchTerm mentah saat user mengetik
     setProductSearchTerm(newInputValue);
-    fetchProductOptions(newInputValue); // Trigger fetch saat user mengetik
+    // JANGAN panggil fetch di sini lagi
+  };
+
+  // --- Fungsi Handler Item & Form (Diupdate) ---
+  const handleAddItem = () => {
+    setOrderItems([
+      ...orderItems,
+      { product: null, quantity: 1, price: 0, note: "" },
+    ]);
+  };
+
+  const handleRemoveItem = (index) => {
+    const newItems = orderItems.filter((_, i) => i !== index); // Cara immutable
+    setOrderItems(newItems);
   };
 
   const handleItemChange = (index, field, value) => {
-    const newItems = [...orderItems];
+    setOrderItems((prevItems) =>
+      prevItems.map((item, i) => {
+        if (i === index) {
+          const updatedItem = { ...item };
+          if (field === "product") {
+            updatedItem.product = value; // value adalah objek produk atau null
+            updatedItem.price = value?.price || 0; // Auto-fill harga
+          } else if (field === "quantity") {
+            updatedItem.quantity = parseInt(value) || 0;
+          } else if (field === "price") {
+            updatedItem.price = parseFloat(value) || 0;
+          } else {
+            // Untuk 'note'
+            updatedItem[field] = value;
+          }
+          return updatedItem;
+        }
+        return item;
+      })
+    );
+  };
 
-    if (field === "product") {
-      // Jika produk berubah (dari Autocomplete), simpan objek produk
-      // dan otomatis isi harga jika ada
-      newItems[index].product = value;
-      newItems[index].price = value?.price || 0; // Isi harga dari produk terpilih
-    } else {
-      // Untuk quantity dan note
-      const numericValue = field === "quantity" ? parseInt(value) || 0 : value;
-      newItems[index][field] = numericValue;
-    }
+  // Calculate total order value
+  const calculateTotal = () => {
+    return orderItems
+      .reduce((total, item) => {
+        return (
+          total + (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)
+        );
+      }, 0)
+      .toLocaleString("id-ID");
+  };
 
-    // Jika harga diubah manual setelah pilih produk
-    if (field === "price") {
-      newItems[index].price = parseFloat(value) || 0;
-    }
+  // Efek untuk mengambil daftar jasa kirim dari backend (saat komponen mount)
+  useEffect(() => {
+    // TODO: Implementasikan pemanggilan API untuk mendapatkan daftar jasa kirim
+    // Contoh data sementara:
+    const fetchShippingProviders = async () => {
+      try {
+        // const response = await fetch('/api/shipping-providers');
+        // const data = await response.json();
+        const data = [
+          { id: 1, name: "JNE" },
+          { id: 2, name: "J&T Express" },
+          { id: 3, name: "SiCepat" },
+          { id: 4, name: "Pos Indonesia" },
+          // ... tambahkan data lain sesuai kebutuhan
+        ];
+        setShippingProviders(data);
+      } catch (error) {
+        console.error("Gagal mengambil daftar jasa kirim:", error);
+      }
+    };
 
-    setOrderItems(newItems);
+    fetchShippingProviders();
+  }, []);
+
+  const handleShippingProviderChange = (event) => {
+    setShippingProviderId(event.target.value);
   };
 
   const handleShippingAddressToggle = (event) => {
@@ -194,49 +247,6 @@ const AcquisitionOrderPage = () => {
     setShippingAddress({ ...shippingAddress, [name]: value });
   };
 
-  // Calculate total order value
-  const calculateTotal = () => {
-    return orderItems
-      .reduce((total, item) => {
-        return (
-          total + (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0)
-        );
-      }, 0)
-      .toLocaleString("id-ID");
-  };
-
-  // State untuk jasa kirim
-  const [shippingProviderId, setShippingProviderId] = useState("");
-  const [shippingProviders, setShippingProviders] = useState([]);
-
-  // Efek untuk mengambil daftar jasa kirim dari backend (saat komponen mount)
-  useEffect(() => {
-    // TODO: Implementasikan pemanggilan API untuk mendapatkan daftar jasa kirim
-    // Contoh data sementara:
-    const fetchShippingProviders = async () => {
-      try {
-        // const response = await fetch('/api/shipping-providers');
-        // const data = await response.json();
-        const data = [
-          { id: 1, name: "JNE" },
-          { id: 2, name: "J&T Express" },
-          { id: 3, name: "SiCepat" },
-          { id: 4, name: "Pos Indonesia" },
-          // ... tambahkan data lain sesuai kebutuhan
-        ];
-        setShippingProviders(data);
-      } catch (error) {
-        console.error("Gagal mengambil daftar jasa kirim:", error);
-      }
-    };
-
-    fetchShippingProviders();
-  }, []);
-
-  const handleShippingProviderChange = (event) => {
-    setShippingProviderId(event.target.value);
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSubmitError(null);
@@ -250,18 +260,8 @@ const AcquisitionOrderPage = () => {
     }
 
     // 1. Validasi Frontend Sederhana (opsional, backend tetap validasi)
-    if (
-      orderItems.some(
-        (item) =>
-          !item.productId ||
-          !item.quantity ||
-          item.price === undefined ||
-          item.price < 0
-      )
-    ) {
-      setSubmitError(
-        "Pastikan semua item produk memiliki Produk ID, Kuantitas, dan Harga yang valid."
-      );
+    if (orderItems.some((item) => !item.product?.id)) {
+      setSubmitError("Pilih produk yang valid untuk semua item pesanan.");
       setIsSubmitting(false);
       return;
     }
@@ -333,13 +333,13 @@ const AcquisitionOrderPage = () => {
       return;
     }
 
-    // 4. Siapkan Payload untuk API
+    // Siapkan Payload dengan productId yang benar
     const payload = {
       newCustomer: customerData,
       orderItems: orderItems.map((item) => ({
-        productId: item.product.id, // <-- Kirim ID integer produk
+        productId: item.product.id, // <-- Ambil ID dari objek produk
         quantity: parseInt(item.quantity) || 0,
-        price: parseFloat(item.price) || 0, // Harga satuan saat order
+        price: parseFloat(item.price) || 0,
         note: item.note || null,
       })),
       buyerNote: buyerNote || null,
@@ -347,38 +347,31 @@ const AcquisitionOrderPage = () => {
       shippingAddressSnapshot: finalShippingAddress,
       shippingProviderId: parseInt(shippingProviderId) || null,
       paymentMethod: paymentMethod || null,
-      orderChannel: "WHATSAPP_ACQUISITION", // Hardcode untuk halaman ini
-      // orderCreatedAt: new Date().toISOString(), // Backend bisa handle ini
+      orderChannel: "WHATSAPP_ACQUISITION",
     };
 
     console.log("Data form yang akan dikirim:", payload);
 
     try {
       const response = await fetch("/api/orders", {
-        // Target endpoint POST order
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // Sertakan token
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(payload),
       });
-
-      const responseData = await response.json(); // Coba baca JSON terlepas dari status
-
-      if (!response.ok) {
-        // Gunakan pesan error dari backend jika ada
+      const responseData = await response.json();
+      if (!response.ok)
         throw new Error(
           responseData.message ||
             `Gagal menyimpan order (Status: ${response.status})`
         );
-      }
 
-      // Sukses!
       setSubmitSuccess(
         `Order berhasil dibuat! (ID: ${responseData.order?.id || "N/A"})`
       );
-      // Reset form (buat fungsi reset terpisah jika perlu)
+      // --- Reset Form ---
       setNewCustomerName("");
       setNewCustomerPhone("");
       setNewCustomerEmail("");
@@ -388,7 +381,7 @@ const AcquisitionOrderPage = () => {
       setNewCustomerDistrict("");
       setNewCustomerVillage("");
       setNewCustomerPostalCode("");
-      setOrderItems([{ productId: "", quantity: 1, price: 0, note: "" }]);
+      setOrderItems([{ product: null, quantity: 1, price: 0, note: "" }]); // Reset dengan product: null
       setBuyerNote("");
       setSellerNote("");
       setIsDifferentShippingAddress(false);
@@ -405,12 +398,11 @@ const AcquisitionOrderPage = () => {
       });
       setShippingProviderId("");
       setPaymentMethod("");
-      setTotalPayment("");
+      // --- End Reset ---
 
-      // Optional: Redirect ke halaman daftar order setelah beberapa detik
       setTimeout(() => {
-        navigate("/sales/orders"); // Arahkan ke daftar order
-      }, 2000); // Delay 2 detik
+        navigate("/sales/orders");
+      }, 2000);
     } catch (err) {
       console.error("Submit Order Error:", err);
       setSubmitError(err.message || "Terjadi kesalahan saat menyimpan order.");
@@ -418,6 +410,8 @@ const AcquisitionOrderPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  //todo: TETRAKHIR EDIT DISINI
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -714,7 +708,6 @@ const AcquisitionOrderPage = () => {
                           <Grid size={{ xs: 12, sm: 6, md: 3, lg: 3 }}>
                             {" "}
                             <Autocomplete
-                              size="medium"
                               fullWidth
                               sx={{
                                 "& .MuiInputBase-root": {
@@ -730,33 +723,36 @@ const AcquisitionOrderPage = () => {
                               }}
                               options={productOptions}
                               getOptionLabel={(option) =>
-                                `${option.sku} - ${option.name}` || ""
+                                option ? `${option.sku} - ${option.name}` : ""
                               }
                               isOptionEqualToValue={(option, value) =>
-                                option.id === value?.id
+                                option?.id === value?.id
                               }
                               value={item.product}
-                              inputValue={productSearchTerm}
-                              onInputChange={handleProductInputChange}
-                              onChange={(event, newValue) =>
-                                handleItemChange(index, "product", newValue)
-                              }
+                              // KITA TIDAK KONTROL inputValue secara manual lagi di sini
+                              // inputValue={productSearchTerm}
+                              onInputChange={handleProductInputChange} // Panggil handler input change
+                              onChange={(event, newValue) => {
+                                handleItemChange(index, "product", newValue);
+                              }}
                               loading={productLoading}
+                              loadingText="Mencari produk..."
+                              noOptionsText={
+                                productSearchTerm.length < 2
+                                  ? "Ketik min. 2 karakter"
+                                  : "Produk tidak ditemukan"
+                              }
                               renderInput={(params) => (
                                 <TextField
                                   {...params}
                                   label="Cari Produk (SKU/Nama)"
                                   variant="outlined"
                                   size="small"
-                                  required
-                                  error={!item.product?.id}
-                                  sx={{
-                                    "& .MuiInputBase-root": {
-                                      borderRadius: 1.5, // Tambahkan borderRadius di sini
-                                    },
-                                  }}
+                                  required // Tetap tampilkan asterisk
+                                  error={false} // Hapus logic error sementara di sini
                                   InputProps={{
                                     ...params.InputProps,
+                                    sx: { borderRadius: 1.5 },
                                     endAdornment: (
                                       <>
                                         {productLoading ? (
@@ -769,32 +765,9 @@ const AcquisitionOrderPage = () => {
                                       </>
                                     ),
                                   }}
-                                  InputLabelProps={{
-                                    shrink: false,
-                                    sx: {
-                                      top: "50%",
-                                      left: 14,
-                                      transform: "translateY(-50%)",
-                                    },
-                                  }}
                                 />
                               )}
                             />
-                            {/* <Grid container spacing={2} alignItems="center">
-                          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                            <FormControl fullWidth>
-                              <TextField
-                                label="Nama Produk"
-                                name="productId"
-                                value={item.productId}
-                                onChange={(e) => handleItemChange(index, e)}
-                                required
-                                variant="outlined"
-                                InputProps={{
-                                  sx: { borderRadius: 1.5 },
-                                }}
-                              />
-                            </FormControl> */}
                           </Grid>
                           <Grid size={{ xs: 12, sm: 3, md: 2 }}>
                             <FormControl fullWidth>
