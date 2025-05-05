@@ -257,6 +257,14 @@ const routes = [
     ],
     children: [
       {
+        path: "new", // Path: /product/new
+        component: "ProductInputPage", // Komponen form baru
+        title: "Tambah Produk Baru",
+        showInSidebar: true, // Mungkin tidak perlu di sidebar utama
+        // Role yang bisa akses halaman input produk
+        requiredRoles: [ROLES.ADMIN, ROLES.MARKETPLACE_MANAGER],
+      },
+      {
         path: "catalog",
         component: "ProductCatalog",
         showInSidebar: true,
