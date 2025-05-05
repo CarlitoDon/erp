@@ -72,7 +72,67 @@ const createProduct = async (req, res) => {
   }
 };
 
+const getAllProducts = async (req, res) => {
+  // Ambil query params untuk pagination dan search
+  const page = parseInt(req.query.page) || 1; // Halaman saat ini, default 1
+  const limit = parseInt(req.query.limit) || 10; // Jumlah item per halaman, default 10
+  const searchQuery = req.query.search || ""; // Query pencarian (opsional)
+
+  const skip = (page - 1) * limit; // Hitung jumlah item yg dilewati
+
+  try {
+    // Siapkan kondisi where untuk pencarian
+    const whereCondition = searchQuery
+      ? {
+          OR: [
+            { name: { contains: searchQuery, mode: "insensitive" } },
+            { sku: { contains: searchQuery, mode: "insensitive" } },
+          ],
+        }
+      : {}; // Kosong jika tidak ada query pencarian
+
+    // Hitung total produk yg cocok (untuk pagination)
+    const totalProducts = await prisma.product.count({
+      where: whereCondition,
+    });
+
+    // Ambil data produk sesuai pagination dan pencarian
+    const products = await prisma.product.findMany({
+      where: whereCondition,
+      select: {
+        // Pilih field yang relevan untuk list
+        id: true,
+        name: true,
+        sku: true,
+        price: true,
+        stock: true, // Stock global (mungkin perlu join WarehouseStock nanti)
+        createdAt: true,
+        updatedAt: true,
+      },
+      skip: skip, // Lewati item sejumlah 'skip'
+      take: limit, // Ambil item sejumlah 'limit'
+      orderBy: {
+        createdAt: "desc", // Urutkan berdasarkan terbaru
+      },
+    });
+
+    // Kirim respons dengan data produk dan info pagination
+    res.json({
+      products: products,
+      currentPage: page,
+      totalPages: Math.ceil(totalProducts / limit),
+      totalCount: totalProducts,
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res
+      .status(500)
+      .json({ message: "Internal server error saat mengambil produk." });
+  }
+};
+
 module.exports = {
   searchProducts, // Pastikan search tetap diekspor
   createProduct, // Ekspor fungsi baru
+  getAllProducts, // Ekspor fungsi baru untuk mendapatkan semua produk
 };

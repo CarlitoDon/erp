@@ -17,5 +17,6 @@ router.post('/', productController.createProduct); // Untuk sekarang, semua yg l
 
 
 // Tambahkan rute CRUD produk lain jika perlu (GET /, GET /:id, PUT /:id, DELETE /:id)
+router.get('/', productController.getAllProducts);
 
 module.exports = router;

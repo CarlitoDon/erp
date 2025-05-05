@@ -266,7 +266,7 @@ const routes = [
       },
       {
         path: "catalog",
-        component: "ProductCatalog",
+        component: "ProductCatalogPage",
         showInSidebar: true,
         title: "Product Catalog",
       },
