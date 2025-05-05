@@ -1,207 +1,215 @@
 // src/pages/AcquisitionOrderPage/components/OrderItemRow.jsx
-import React from 'react';
+import React from "react";
 import {
   Autocomplete,
   TextField,
   FormControl,
-  Grid,
+  Grid, // Pastikan import dari @mui/material/Grid
   Typography,
   Box,
-  Paper,
+  Paper, // Import Paper
   Chip,
   IconButton,
   CircularProgress,
-} from '@mui/material';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+} from "@mui/material";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
-// Komponen ini menerima semua data & handler yang dibutuhkan sebagai props
 const OrderItemRow = ({
   item,
   index,
-  orderItemsCount, // Untuk menentukan apakah tombol hapus ditampilkan
+  orderItemsCount,
   productOptions,
   productLoading,
-  onItemChange,
-  onRemoveItem,
-  onProductInputChange, // Handler saat input Autocomplete berubah
+  onItemChange, // Menerima (index, field, value)
+  onRemoveItem, // Menerima (index)
+  onProductInputChange, // Menerima (event, newInputValue)
 }) => {
-
-  // Handler internal untuk menyederhanakan pemanggilan onItemChange
-  const handleChange = (field, value) => {
-    onItemChange(index, field, value);
+  // Handler untuk Autocomplete selection
+  const handleProductChange = (event, newValue) => {
+    onItemChange(index, "product", newValue); // Kirim 'product' dan objek produk baru
   };
 
-  // Handler untuk perubahan input textfield biasa (kuantitas, harga, note)
+  // Handler untuk TextField biasa (Quantity, Price, Note)
   const handleTextFieldChange = (event) => {
     const { name, value } = event.target;
-    onItemChange(index, name, value); // name akan jadi 'quantity', 'price', atau 'note'
+    onItemChange(index, name, value); // Kirim index, nama field, dan value baru
   };
 
-
   return (
+    // Gunakan Paper sebagai root, tiru styling lama
     <Paper
       elevation={0}
+      key={index}
       sx={{
         p: 2,
         borderRadius: 2,
-        width: '100%',
+        width: "100%",
         mb: 2,
-        border: '1px solid #e8e8e8',
-        position: 'relative',
-        overflow: 'hidden',
+        border: "1px solid #e8e8e8",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
-      {/* Aksen visual di kiri */}
+      {/* Aksen visual kiri */}
       <Box
         sx={{
-          position: 'absolute',
+          position: "absolute",
           top: 0,
           left: 0,
-          width: '6px',
-          height: '100%',
-          bgcolor: '#3f51b5', // Sesuaikan warna jika perlu
+          width: "6px",
+          height: "100%",
+          bgcolor: "#3f51b5",
         }}
       />
 
       <Box sx={{ pl: 1 }}>
-        {/* Header Baris Item */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Chip
             label={`Produk ${index + 1}`}
             size="small"
             sx={{
-              bgcolor: '#e8eaf6',
-              color: '#3f51b5',
-              fontWeight: 'bold',
+              bgcolor: "#e8eaf6",
+              color: "#3f51b5",
+              fontWeight: "bold",
               mr: 2,
             }}
           />
-          {/* Tampilkan tombol hapus hanya jika ada lebih dari 1 item */}
           {orderItemsCount > 1 && (
             <IconButton
-              onClick={() => onRemoveItem(index)}
+              onClick={() => onRemoveItem(index)} // Panggil onRemoveItem dengan index
               color="error"
               size="small"
-              sx={{ ml: 'auto' }}
-              aria-label={`Hapus Produk ${index + 1}`} // Tambahkan aria-label untuk aksesibilitas
+              sx={{ ml: "auto" }}
+              aria-label={`Hapus Produk ${index + 1}`}
             >
               <DeleteOutlineIcon />
             </IconButton>
           )}
         </Box>
 
-        {/* Grid Input Fields */}
+        {/* Grid untuk input fields */}
         <Grid container spacing={2} alignItems="flex-start">
           {/* Kolom Autocomplete Produk */}
-          <Grid item xs={12} sm={6} md={4} lg={4}> {/* Lebarkan sedikit */}
-             <Autocomplete
-                fullWidth
-                // Atur styling Autocomplete agar konsisten
-                sx={{
-                    '& .MuiInputBase-root': { height: '56px', boxSizing: 'border-box' },
-                    '& .MuiAutocomplete-inputRoot': { paddingRight: '39px !important' }, // Pastikan ada ruang untuk loading/clear
-                    '& .MuiOutlinedInput-input': { padding: '16.5px 14px' }, // Sesuaikan padding input
-                }}
-                options={productOptions || []} // Pastikan options selalu array
-                getOptionLabel={(option) => (option ? `${option.sku} - ${option.name}` : '')}
-                isOptionEqualToValue={(option, value) => option?.id === value?.id}
-                value={item.product || null} // Pastikan value adalah objek atau null
-                onInputChange={onProductInputChange} // Panggil handler dari parent saat user mengetik
-                onChange={(event, newValue) => {
-                    handleChange('product', newValue); // Handle saat user memilih produk
-                }}
-                loading={productLoading}
-                loadingText="Mencari produk..."
-                noOptionsText="Produk tidak ditemukan" // Sesuaikan teks jika perlu
-                renderInput={(params) => (
+          <Grid size={{ xs: 12, sm: 6, md: 3, lg: 3 }}>
+            {" "}
+            {/* Ukuran dari kode lama (md/lg disamakan) */}
+            <Autocomplete
+              fullWidth
+              sx={{
+                "& .MuiInputBase-root": {
+                  height: "56px", // sesuaikan dengan TextField lain
+                  boxSizing: "border-box",
+                },
+                "& .MuiAutocomplete-inputRoot": {
+                  padding: 0, // hilangkan padding ekstra
+                },
+                "& input": {
+                  padding: "10.5px 14px", // samakan padding TextField size small
+                },
+              }}
+              options={productOptions || []}
+              getOptionLabel={(option) =>
+                option ? `${option.sku} - ${option.name}` : ""
+              }
+              isOptionEqualToValue={(option, value) => option?.id === value?.id}
+              value={item.product || null} // Gunakan item.product
+              onInputChange={onProductInputChange} // Teruskan handler input change
+              onChange={handleProductChange} // Gunakan handler product change
+              loading={productLoading}
+              loadingText="Mencari produk..."
+              noOptionsText={"Produk tidak ditemukan"} // Sederhanakan
+              renderInput={(params) => (
                 <TextField
-                    {...params}
-                    label="Cari Produk (SKU/Nama)"
-                    variant="outlined"
-                    // size="small" // Gunakan size default agar tinggi konsisten
-                    required // Tetap tampilkan asterisk
-                    InputProps={{
-                        ...params.InputProps,
-                        sx: { borderRadius: 1.5 },
-                        endAdornment: (
-                            <>
-                            {productLoading ? (
-                                <CircularProgress color="inherit" size={20} sx={{ marginRight: '9px' }}/> // Beri margin jika loading
-                            ) : null}
-                            {params.InputProps.endAdornment}
-                            </>
-                        ),
-                    }}
+                  {...params}
+                  label="Cari Produk (SKU/Nama)"
+                  variant="outlined"
+                  size="small" // <-- Tambahkan size small seperti di kode lama
+                  required
+                  // error={false} // Sebaiknya hapus logic error sementara
+                  InputProps={{
+                    ...params.InputProps,
+                    sx: { borderRadius: 1.5 }, // Dari kode lama
+                    endAdornment: (
+                      <>
+                        {productLoading ? (
+                          <CircularProgress color="inherit" size={20} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
                 />
-                )}
-                // Filter options di sisi client (optional, bisa di-handle server)
-                // filterOptions={(x) => x} // Jika search sepenuhnya di server
-             />
+              )}
+            />
           </Grid>
 
           {/* Kolom Kuantitas */}
-          <Grid item xs={6} sm={3} md={2}>
+          <Grid size={{ xs: 12, sm: 3, md: 2 }}>
             <FormControl fullWidth>
               <TextField
                 label="Kuantitas"
-                name="quantity" // Penting untuk handleTextFieldChange
+                name="quantity"
                 type="number"
                 value={item.quantity}
-                onChange={handleTextFieldChange}
+                onChange={handleTextFieldChange} // Gunakan handler generik
                 required
                 variant="outlined"
                 InputProps={{
-                  sx: { borderRadius: 1.5 },
-                  inputProps: { min: 1 } // Minimal kuantitas 1
+                  sx: { borderRadius: 1.5 }, // Dari kode lama
+                  inputProps: { min: 1 }, // Tambahkan validasi min
                 }}
               />
             </FormControl>
           </Grid>
 
           {/* Kolom Harga */}
-          <Grid item xs={6} sm={3} md={3}>
+          <Grid size={{ xs: 6, sm: 3, md: 3 }}>
+            {" "}
+            {/* Ukuran dari kode lama */}
             <FormControl fullWidth>
               <TextField
-                label="Harga (Rp)"
+                label="Harga per Item (Rp)"
                 name="price" // Penting untuk handleTextFieldChange
                 type="number"
                 value={item.price}
-                onChange={handleTextFieldChange}
+                onChange={handleTextFieldChange} // Gunakan handler generik
                 required
                 variant="outlined"
                 InputProps={{
-                  sx: { borderRadius: 1.5 },
-                  inputProps: { step: "any" } // Izinkan desimal jika perlu
+                  sx: { borderRadius: 1.5 }, // Dari kode lama
+                  inputProps: { step: "any" }, // Izinkan desimal
                 }}
               />
             </FormControl>
           </Grid>
 
           {/* Kolom Catatan Produk */}
-          <Grid item xs={12} md={3}> {/* Sedikit lebih lebar */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            {" "}
+            {/* Ukuran dari kode lama */}
             <FormControl fullWidth>
               <TextField
-                label="Catatan Item (Opsional)"
+                label="Catatan Produk (Opsional)"
                 name="note" // Penting untuk handleTextFieldChange
                 value={item.note}
-                onChange={handleTextFieldChange}
+                onChange={handleTextFieldChange} // Gunakan handler generik
                 variant="outlined"
                 InputProps={{
-                  sx: { borderRadius: 1.5 },
+                  sx: { borderRadius: 1.5 }, // Dari kode lama
                 }}
               />
             </FormControl>
           </Grid>
         </Grid>
 
-        {/* Tampilkan Subtotal jika valid */}
+        {/* Tampilkan Subtotal jika valid (sama seperti kode lama) */}
         {item.quantity > 0 && item.price > 0 && (
-          <Box sx={{ mt: 2, textAlign: 'right' }}>
+          <Box sx={{ mt: 2, textAlign: "right" }}>
             <Typography variant="body2" color="text.secondary">
-              Subtotal: Rp{' '}
+              Subtotal: Rp{" "}
               {(
                 parseFloat(item.price) * parseInt(item.quantity)
-              ).toLocaleString('id-ID')}
+              ).toLocaleString("id-ID")}
             </Typography>
           </Box>
         )}

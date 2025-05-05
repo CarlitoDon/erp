@@ -1,23 +1,21 @@
 // src/pages/AcquisitionOrderPage/components/CustomerInfoForm.jsx
-import React from 'react';
+import React from "react";
 import {
   TextField,
   FormControl,
-  Grid,
+  Grid, // Pastikan import Grid dari '@mui/material/Grid' (bukan GridLegacy)
   Typography,
   Box,
   Card,
   CardContent,
-} from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
+  InputAdornment,
+} from "@mui/material";
+import PersonIcon from "@mui/icons-material/Person";
 
-// Komponen ini menerima data customer dan handler perubahan sebagai props
 const CustomerInfoForm = ({ customerData, onCustomerChange }) => {
-
-  // Handler generik untuk semua input field dalam form ini
   const handleChange = (event) => {
     const { name, value } = event.target;
-    onCustomerChange(name, value); // Memanggil fungsi callback dari parent
+    onCustomerChange(name, value);
   };
 
   return (
@@ -25,8 +23,8 @@ const CustomerInfoForm = ({ customerData, onCustomerChange }) => {
       sx={{
         mb: 4,
         borderRadius: 2,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        overflow: 'visible', // Atau 'hidden' jika tidak ada elemen yang keluar
+        boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        overflow: "visible",
       }}
     >
       <CardContent sx={{ p: 0 }}>
@@ -34,15 +32,15 @@ const CustomerInfoForm = ({ customerData, onCustomerChange }) => {
         <Box
           sx={{
             p: 2,
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '1px solid #f0f0f0',
-            bgcolor: '#f9f9f9',
+            display: "flex",
+            alignItems: "center",
+            borderBottom: "1px solid #f0f0f0",
+            bgcolor: "#f9f9f9",
             borderTopLeftRadius: 2,
             borderTopRightRadius: 2,
           }}
         >
-          <PersonIcon sx={{ mr: 1.5, color: '#3f51b5' }} />
+          <PersonIcon sx={{ mr: 1.5, color: "#3f51b5" }} />
           <Typography variant="h6" fontWeight="600">
             Informasi Customer
           </Typography>
@@ -50,145 +48,149 @@ const CustomerInfoForm = ({ customerData, onCustomerChange }) => {
 
         {/* Konten Form */}
         <Box sx={{ p: 3 }}>
+          {/* Nama Lengkap */}
           <FormControl fullWidth margin="normal">
             <TextField
               label="Nama Lengkap Customer"
-              name="name" // <-- Nama field harus sesuai key di state parent
-              value={customerData.name || ''} // Ambil value dari props
-              onChange={handleChange} // Gunakan handler internal
+              name="name"
+              value={customerData.name || ""}
+              onChange={handleChange}
               required
               variant="outlined"
-              InputProps={{
-                sx: { borderRadius: 1.5 },
-              }}
+              InputProps={{ sx: { borderRadius: 1.5 } }}
             />
           </FormControl>
 
+          {/* Telepon & Email */}
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
+            {/* Telepon */}
+            {/* Hapus 'item' prop, gunakan 'size' prop */}
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
-                  label="Nomor Telepon (+62)"
-                  name="phone" // <-- Nama field
-                  value={customerData.phone || ''}
+                  label="Nomor Telepon Customer"
+                  name="phone"
+                  value={customerData.phone || ""}
                   onChange={handleChange}
                   required
                   variant="outlined"
+                  placeholder="81234567890"
                   InputProps={{
                     sx: { borderRadius: 1.5 },
-                    // startAdornment tidak perlu '+62' jika input diharapkan tanpa itu
-                    // startAdornment: <Box sx={{ mr: 1, color: 'text.secondary' }}>+62</Box>,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Box sx={{ mr: 1, color: "text.secondary" }}>+62</Box>
+                      </InputAdornment>
+                    ),
                   }}
-                  placeholder="Contoh: 81234567890" // Beri contoh format
                 />
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            {/* Email */}
+            {/* Hapus 'item' prop, gunakan 'size' prop */}
+            <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
                   label="Email Customer (Opsional)"
-                  name="email" // <-- Nama field
-                  type="email" // Gunakan type email untuk validasi browser dasar
-                  value={customerData.email || ''}
+                  name="email"
+                  type="email"
+                  value={customerData.email || ""}
                   onChange={handleChange}
                   variant="outlined"
-                  InputProps={{
-                    sx: { borderRadius: 1.5 },
-                  }}
+                  InputProps={{ sx: { borderRadius: 1.5 } }}
                 />
               </FormControl>
             </Grid>
           </Grid>
 
+          {/* Alamat Lengkap */}
           <FormControl fullWidth margin="normal">
             <TextField
               label="Alamat Lengkap Customer *"
-              name="address" // <-- Nama field
+              name="address"
               multiline
               rows={3}
-              value={customerData.address || ''}
+              value={customerData.address || ""}
               onChange={handleChange}
               required
               variant="outlined"
-              InputProps={{
-                sx: { borderRadius: 1.5 },
-              }}
+              InputProps={{ sx: { borderRadius: 1.5 } }}
             />
           </FormControl>
 
-          {/* Input Alamat Detail (Provinsi, Kota, dst.) */}
+          {/* Alamat Detail */}
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* Provinsi */}
+            {/* Hapus 'item' prop, gunakan 'size' prop */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
                   label="Provinsi *"
-                  name="province" // <-- Nama field
-                  value={customerData.province || ''}
+                  name="province"
+                  value={customerData.province || ""}
                   onChange={handleChange}
                   required
                   variant="outlined"
-                  InputProps={{
-                    sx: { borderRadius: 1.5 },
-                  }}
+                  InputProps={{ sx: { borderRadius: 1.5 } }}
                 />
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* Kota/Kabupaten */}
+             {/* Hapus 'item' prop, gunakan 'size' prop */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
                   label="Kota/Kabupaten *"
-                  name="city" // <-- Nama field
-                  value={customerData.city || ''}
+                  name="city"
+                  value={customerData.city || ""}
                   onChange={handleChange}
                   required
                   variant="outlined"
-                  InputProps={{
-                    sx: { borderRadius: 1.5 },
-                  }}
+                  InputProps={{ sx: { borderRadius: 1.5 } }}
                 />
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* Kecamatan */}
+             {/* Hapus 'item' prop, gunakan 'size' prop */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
                   label="Kecamatan *"
-                  name="district" // <-- Nama field
-                  value={customerData.district || ''}
+                  name="district"
+                  value={customerData.district || ""}
                   onChange={handleChange}
                   required
                   variant="outlined"
-                  InputProps={{
-                    sx: { borderRadius: 1.5 },
-                  }}
+                  InputProps={{ sx: { borderRadius: 1.5 } }}
                 />
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* Desa/Kelurahan */}
+             {/* Hapus 'item' prop, gunakan 'size' prop */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
                   label="Desa/Kelurahan *"
-                  name="village" // <-- Nama field
-                  value={customerData.village || ''}
+                  name="village"
+                  value={customerData.village || ""}
                   onChange={handleChange}
                   required
                   variant="outlined"
-                  InputProps={{
-                    sx: { borderRadius: 1.5 },
-                  }}
+                  InputProps={{ sx: { borderRadius: 1.5 } }}
                 />
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* Kode Pos */}
+             {/* Hapus 'item' prop, gunakan 'size' prop */}
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
                   label="Kode Pos (Opsional)"
-                  name="postalCode" // <-- Nama field
-                  value={customerData.postalCode || ''}
+                  name="postalCode"
+                  value={customerData.postalCode || ""}
                   onChange={handleChange}
                   variant="outlined"
-                  InputProps={{
-                    sx: { borderRadius: 1.5 },
-                  }}
+                  InputProps={{ sx: { borderRadius: 1.5 } }}
                 />
               </FormControl>
             </Grid>
