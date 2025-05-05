@@ -6,6 +6,7 @@ const router = express.Router();
 const authRoutes = require('./authRoutes');
 const userRoutes = require('./userRoutes');
 const orderRoutes = require('./orderRoutes'); // <-- 1. Impor orderRoutes
+const productRoutes = require('./productRoutes'); // Jika ada rute produk
 // const storeConnectionRoutes = require('./storeConnectionRoutes');
 // ...
 
@@ -19,6 +20,7 @@ router.use(authenticateToken); // Terapkan token untuk semua di bawah ini
 
 router.use('/users', authorizeAdmin, userRoutes); // Khusus Admin
 router.use('/orders', orderRoutes); // <-- 2. Mount orderRoutes (sudah terproteksi token)
+router.use('/products', productRoutes); // Jika ada rute produk
 // router.use('/store-connections', storeConnectionRoutes);
 // ...
 

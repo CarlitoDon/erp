@@ -1,6 +1,7 @@
 // src/pages/AcquisitionOrderPage.jsx
-import React, { useState, useEffect, useContext } from "react"; // Import useEffect
+import React, { useState, useEffect, useContext, useCallback } from "react"; // Import useEffect
 import {
+  Autocomplete,
   TextField,
   Button,
   FormControl,
@@ -10,8 +11,8 @@ import {
   Grid,
   Typography,
   Box,
-  Checkbox, // Import Checkbox
-  Paper, // Import Paper
+  Checkbox,
+  Paper,
   Card,
   CardContent,
   InputAdornment,
@@ -38,6 +39,9 @@ import { useAuth } from "../contexts/AuthContext"; // Import context Auth
 
 const AcquisitionOrderPage = () => {
   // State untuk informasi customer (baru atau dipilih)
+  const [productOptions, setProductOptions] = useState([]);
+  const [productLoading, setProductLoading] = useState(false);
+  const [productSearchTerm, setProductSearchTerm] = useState("");
   const [isNewCustomer, setIsNewCustomer] = useState(false);
   const [existingCustomer, setExistingCustomer] = useState("");
   const [newCustomerName, setNewCustomerName] = useState("");
@@ -58,7 +62,9 @@ const AcquisitionOrderPage = () => {
 
   // State untuk produk yang dipesan
   const [orderItems, setOrderItems] = useState([
-    { productId: "", quantity: 1, note: "" },
+    //   { productId: "", quantity: 1, note: "" },
+    // ]);
+    { product: null, quantity: 1, price: 0, note: "" },
   ]);
 
   // State untuk catatan order
@@ -85,7 +91,10 @@ const AcquisitionOrderPage = () => {
   const [totalPayment, setTotalPayment] = useState("");
 
   const handleAddItem = () => {
-    setOrderItems([...orderItems, { productId: "", quantity: 1, note: "" }]);
+    setOrderItems([
+      ...orderItems,
+      { product: null, quantity: 1, price: 0, note: "" },
+    ]);
   };
 
   const handleRemoveItem = (index) => {
@@ -94,10 +103,59 @@ const AcquisitionOrderPage = () => {
     setOrderItems(newItems);
   };
 
-  const handleItemChange = (index, event) => {
-    const { name, value } = event.target;
+  const fetchProductOptions = useCallback(
+    async (searchTerm) => {
+      if (!token || searchTerm.length < 2) {
+        // Hanya cari jika > 1 karakter & ada token
+        setProductOptions([]); // Kosongkan opsi jika search term pendek
+        return;
+      }
+      setProductLoading(true);
+      try {
+        const response = await fetch(
+          `/api/products/search?q=${encodeURIComponent(searchTerm)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!response.ok) throw new Error("Gagal mencari produk");
+        const data = await response.json();
+        setProductOptions(data);
+      } catch (error) {
+        console.error("Error fetching product options:", error);
+        setProductOptions([]); // Kosongkan jika error
+      } finally {
+        setProductLoading(false);
+      }
+    },
+    [token]
+  ); // Depend on token
+
+  // --- Handler untuk Autocomplete ---
+  const handleProductInputChange = (event, newInputValue) => {
+    setProductSearchTerm(newInputValue);
+    fetchProductOptions(newInputValue); // Trigger fetch saat user mengetik
+  };
+
+  const handleItemChange = (index, field, value) => {
     const newItems = [...orderItems];
-    newItems[index][name] = value;
+
+    if (field === "product") {
+      // Jika produk berubah (dari Autocomplete), simpan objek produk
+      // dan otomatis isi harga jika ada
+      newItems[index].product = value;
+      newItems[index].price = value?.price || 0; // Isi harga dari produk terpilih
+    } else {
+      // Untuk quantity dan note
+      const numericValue = field === "quantity" ? parseInt(value) || 0 : value;
+      newItems[index][field] = numericValue;
+    }
+
+    // Jika harga diubah manual setelah pilih produk
+    if (field === "price") {
+      newItems[index].price = parseFloat(value) || 0;
+    }
+
     setOrderItems(newItems);
   };
 
@@ -207,6 +265,11 @@ const AcquisitionOrderPage = () => {
       setIsSubmitting(false);
       return;
     }
+    if (orderItems.some((item) => !item.product?.id)) {
+      setSubmitError("Pilih produk yang valid untuk semua item pesanan.");
+      setIsSubmitting(false);
+      return;
+    }
     if (!shippingProviderId) {
       setSubmitError("Jasa kirim wajib dipilih.");
       setIsSubmitting(false);
@@ -272,21 +335,17 @@ const AcquisitionOrderPage = () => {
 
     // 4. Siapkan Payload untuk API
     const payload = {
-      // Backend akan handle pembuatan customer berdasarkan ini
       newCustomer: customerData,
-      // Map orderItems ke format yg diharapkan (pastikan price adalah harga final per item)
       orderItems: orderItems.map((item) => ({
-        productId: parseInt(item.productId) || 0, // Pastikan integer ID Produk
+        productId: item.product.id, // <-- Kirim ID integer produk
         quantity: parseInt(item.quantity) || 0,
-        // Asumsikan item.price adalah harga satuan final
-        // Backend akan mengisi unitOriginalPrice dan unitPriceAfterDiscount
-        price: parseFloat(item.price) || 0,
+        price: parseFloat(item.price) || 0, // Harga satuan saat order
         note: item.note || null,
       })),
       buyerNote: buyerNote || null,
       sellerNote: sellerNote || null,
-      shippingAddressSnapshot: finalShippingAddress, // Kirim snapshot alamat
-      shippingProviderId: parseInt(shippingProviderId) || null, // Pastikan integer
+      shippingAddressSnapshot: finalShippingAddress,
+      shippingProviderId: parseInt(shippingProviderId) || null,
       paymentMethod: paymentMethod || null,
       orderChannel: "WHATSAPP_ACQUISITION", // Hardcode untuk halaman ini
       // orderCreatedAt: new Date().toISOString(), // Backend bisa handle ini
@@ -495,7 +554,7 @@ const AcquisitionOrderPage = () => {
                   </FormControl>
 
                   <Grid container spacing={2}>
-                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Provinsi *"
@@ -510,7 +569,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Kota/Kabupaten *"
@@ -523,7 +582,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Kecamatan *"
@@ -538,7 +597,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Desa/Kelurahan *"
@@ -553,7 +612,7 @@ const AcquisitionOrderPage = () => {
                         />
                       </FormControl>
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                       <FormControl fullWidth margin="normal">
                         <TextField
                           label="Kode Pos (Opsional)"
@@ -651,8 +710,76 @@ const AcquisitionOrderPage = () => {
                           )}
                         </Box>
 
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                        <Grid container spacing={2} alignItems="flex-start">
+                          <Grid size={{ xs: 12, sm: 6, md: 3, lg: 3 }}>
+                            {" "}
+                            <Autocomplete
+  size="medium"
+  fullWidth
+  sx={{
+    "& .MuiInputBase-root": {
+      height: "56px", // sesuaikan dengan TextField lain
+      boxSizing: "border-box",
+    },
+    "& .MuiAutocomplete-inputRoot": {
+      padding: 0, // hilangkan padding ekstra
+    },
+    "& input": {
+      padding: "10.5px 14px", // samakan padding TextField size small
+    },
+  }}
+  options={productOptions}
+  getOptionLabel={(option) =>
+    `${option.sku} - ${option.name}` || ""
+  }
+  isOptionEqualToValue={(option, value) =>
+    option.id === value?.id
+  }
+  value={item.product}
+  inputValue={productSearchTerm}
+  onInputChange={handleProductInputChange}
+  onChange={(event, newValue) =>
+    handleItemChange(index, "product", newValue)
+  }
+  loading={productLoading}
+  renderInput={(params) => (
+    <TextField
+      {...params}
+      label="Cari Produk (SKU/Nama)"
+      variant="outlined"
+      size="small"
+      required
+      error={!item.product?.id}
+      sx={{
+        "& .MuiInputBase-root": {
+          borderRadius: 1.5, // Tambahkan borderRadius di sini
+        },
+      }}
+      InputProps={{
+        ...params.InputProps,
+        endAdornment: (
+          <>
+            {productLoading ? (
+              <CircularProgress color="inherit" size={20} />
+            ) : null}
+            {params.InputProps.endAdornment}
+          </>
+        ),
+      }}
+      InputLabelProps={{
+        shrink: false,
+        sx: {
+          top: "50%",
+          left: 14,
+          transform: "translateY(-50%)",
+        },
+      }}
+    />
+  )}
+/>
+
+                            {/* <Grid container spacing={2} alignItems="center">
+                          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <FormControl fullWidth>
                               <TextField
                                 label="Nama Produk"
@@ -665,7 +792,7 @@ const AcquisitionOrderPage = () => {
                                   sx: { borderRadius: 1.5 },
                                 }}
                               />
-                            </FormControl>
+                            </FormControl> */}
                           </Grid>
                           <Grid size={{ xs: 12, sm: 3, md: 2 }}>
                             <FormControl fullWidth>
@@ -690,7 +817,13 @@ const AcquisitionOrderPage = () => {
                                 name="price"
                                 type="number"
                                 value={item.price}
-                                onChange={(e) => handleItemChange(index, e)}
+                                onChange={(e) =>
+                                  handleItemChange(
+                                    index,
+                                    "quantity",
+                                    e.target.value
+                                  )
+                                }
                                 required
                                 variant="outlined"
                                 InputProps={{
@@ -926,7 +1059,7 @@ const AcquisitionOrderPage = () => {
                       </FormControl>
 
                       <Grid container spacing={2}>
-                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Provinsi"
@@ -940,7 +1073,7 @@ const AcquisitionOrderPage = () => {
                             />
                           </FormControl>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Kota/Kabupaten"
@@ -954,7 +1087,7 @@ const AcquisitionOrderPage = () => {
                             />
                           </FormControl>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Kecamatan"
@@ -968,7 +1101,7 @@ const AcquisitionOrderPage = () => {
                             />
                           </FormControl>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Desa/Kelurahan"
@@ -982,7 +1115,7 @@ const AcquisitionOrderPage = () => {
                             />
                           </FormControl>
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6, md: 3}}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                           <FormControl fullWidth margin="normal">
                             <TextField
                               label="Kode Pos"
