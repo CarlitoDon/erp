@@ -57,6 +57,12 @@ const routes = [
     ],
     children: [
       {
+        index: true, // Rute default untuk /settings
+        component: "SalesOverview", // Komponen dashboard settings
+        title: "Sales Overview", // Opsional
+        showInSidebar: false, // Biasanya tidak perlu di sidebar
+      },
+      {
         path: "orders",
         component: "OrderListPage",
         title: "Daftar Pesanan",
@@ -82,7 +88,7 @@ const routes = [
           // jika tidak didefinisikan ulang
           {
             path: "input-order",
-            component: "InputOrderAcquisition",
+            component: "AcquisitionOrderPage",
             title: "Input Order (Acquisition)",
           },
           {

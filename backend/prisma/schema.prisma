@@ -9,27 +9,41 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  MARKETING_PERFORMANCE_MANAGER
   SALES_ACQUISITION
   SALES_RETENTION
   MARKETPLACE_MANAGER
   WAREHOUSE_STAFF
-  FINANCE_STAFF // Opsional
+  FINANCE_STAFF
+  ADVERTISER // Role baru yang penting
 }
 
 model User {
   id        Int      @id @default(autoincrement())
   username  String   @unique
   password  String
-  // isAdmin Boolean @default(false) // Ganti isAdmin dengan role
-  role      UserRole @default(SALES_ACQUISITION) // Tentukan default role yg paling umum/minim hak
+  role      UserRole @default(SALES_ACQUISITION) // UBAH JIKA DEFAULT ROLE BERBEDA
   createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  updatedAt DateTime @updatedAt
 
   storeConnections StoreConnection[]
   ordersCreated    Order[]           @relation("SalesRepOrders")
+
+  // Relasi ke Advertiser (jika seorang CS bisa dimiliki oleh satu Advertiser)
+  advertiserId Int? // UBAH JADI Int JIKA SETIAP CS WAJIB TERHUBUNG KE ADVERTISER
+  advertiser   User? @relation("AdvertiserCS", fields: [advertiserId], references: [id])
+
+  // Relasi Advertiser ke banyak CS
+  csTeam User[] @relation("AdvertiserCS")
+
+  // Relasi ke Marketing Performance Manager (MPM)
+  mpmId Int? // UBAH JADI Int JIKA SETIAP ADVERTISER WAJIB PUNYA MPM
+  mpm   User? @relation("AdvertiserMPM", fields: [mpmId], references: [id])
+
+  // Relasi MPM ke banyak Advertiser
+  advertiserTeam User[] @relation("AdvertiserMPM")
 }
 
-// Enum baru untuk membedakan channel order
 enum OrderChannel {
   MARKETPLACE
   WHATSAPP_ACQUISITION
@@ -40,10 +54,8 @@ enum OrderChannel {
 model Customer {
   id         Int      @id @default(autoincrement())
   name       String
-  phone      String   @unique // Nomor telepon sebagai identifier utama?
+  phone      String   @unique // Nomor telepon sebagai identifier utama? PERTIMBANGKAN KEUNIKAN
   email      String?  @unique
-  // Alamat bisa disimpan di sini atau model terpisah jika perlu multi-alamat
-  // Untuk simple, kita simpan alamat default di sini
   address    String?
   province   String?
   city       String?
@@ -55,9 +67,9 @@ model Customer {
 
   orders Order[] // Semua order dari customer ini
 
-  // Jika perlu melacak siapa yg create/manage customer ini
+  // JIKA PERLU MELACAK SIAPA YG CREATE/MANAGE CUSTOMER INI, UNCOMMENT DAN SESUAIKAN
   // createdById Int?
-  // createdBy User? @relation("UserCreatedCustomers", fields: [createdById], references: [id])
+  // createdBy   User?    @relation("UserCreatedCustomers", fields: [createdById], references: [id])
 }
 
 model StoreConnection {
@@ -95,6 +107,13 @@ enum Marketplace {
   Lazada
 }
 
+model ShippingProvider {
+  id   Int    @id @default(autoincrement())
+  name String @unique // Nama jasa kirim (JNE, J&T, dll.)
+
+  orders Order[] // Relasi one-to-many ke model Order
+}
+
 model Order {
   id Int @id @default(autoincrement())
 
@@ -102,8 +121,8 @@ model Order {
   orderChannel      OrderChannel // Sumber order (WA, Marketplace, dll)
   storeConnectionId Int? // NULLABLE: Hanya diisi jika orderChannel = MARKETPLACE
   storeConnection   StoreConnection? @relation("MarketplaceOrders", fields: [storeConnectionId], references: [id]) // Relasi opsional
-  salesRepId        Int? // NULLABLE: Hanya diisi jika orderChannel = WHATSAPP_* (User yg input)
-  salesRep          User?            @relation("SalesRepOrders", fields: [salesRepId], references: [id]) // Relasi opsional ke User
+  salesRepId        Int? // NULLABLE: User yg input order (CS)
+  salesRep          User?            @relation("SalesRepOrders", fields: [salesRepId], references: [id]) // Relasi opsional ke User (CS)
   platformOrderId   String // Tetap wajib, bisa diisi ID internal/unik untuk order WA
 
   // --- Relasi ke Customer (WAJIB) ---
@@ -111,8 +130,6 @@ model Order {
   customer   Customer @relation(fields: [customerId], references: [id])
 
   // --- Informasi Customer/Pengiriman (Snapshot saat Order) ---
-  // Hapus field customer, phone, address, dll. Ambil dari relasi Customer.
-  // Simpan snapshot alamat pengiriman jika bisa berbeda dari alamat default customer
   shippingAddressSnapshot Json? // Menyimpan detail alamat pengiriman saat itu (nama, telp, alamat, dll)
 
   // --- Timestamps ---
@@ -146,10 +163,11 @@ model Order {
   insuranceFee                Float? @default(0)
 
   // --- Shipping & Payment ---
-  shippingProvider String?
-  trackingNumber   String?
-  paymentMethod    String?
-  packageId        String?
+  shippingProviderId Int?
+  shippingProvider   ShippingProvider? @relation(fields: [shippingProviderId], references: [id])
+  trackingNumber     String?
+  paymentMethod      String?
+  packageId          String?
 
   // --- Notes ---
   buyerNote  String?
@@ -163,16 +181,11 @@ model Order {
   // --- ERP Timestamps ---
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  // @@unique([orderChannel, platformOrderId]) // Mungkin? Jika platformOrderId unik per channel
 
-  // Ganti constraint unik jika diperlukan (platformOrderId mungkin tidak unik global)
-  // Pertimbangkan unik per channel atau sumber?
-  // Untuk simple, kita bisa buat platformOrderId unik per OrderChannel jika bukan marketplace
   @@unique([storeConnectionId, platformOrderId]) // Tetap unik untuk marketplace
 }
 
 model OrderItem {
-  // Tidak perlu perubahan signifikan di sini untuk mengakomodasi sumber order
   id                     Int     @id @default(autoincrement())
   orderId                Int
   order                  Order   @relation(fields: [orderId], references: [id])
@@ -187,18 +200,17 @@ model OrderItem {
   itemPlatformDiscount   Float   @default(0)
   itemSellerDiscount     Float   @default(0)
 
-  @@unique([orderId, productId, platformSkuId]) // Mungkin perlu disesuaikan
+  @@unique([orderId, productId, platformSkuId]) // PERTIMBANGKAN KEUNIKAN JIKA platformSkuId BISA NULL
 }
 
 model Product {
-  id        Int      @id @default(autoincrement())
-  name      String
-  sku       String   @unique
-  price     Float
-  stock     Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id              Int              @id @default(autoincrement())
+  name            String
+  sku             String           @unique
+  price           Float
+  stock           Int
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   items           OrderItem[]
   warehouseStocks WarehouseStock[]
 }
