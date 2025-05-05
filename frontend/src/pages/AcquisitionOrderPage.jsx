@@ -714,70 +714,72 @@ const AcquisitionOrderPage = () => {
                           <Grid size={{ xs: 12, sm: 6, md: 3, lg: 3 }}>
                             {" "}
                             <Autocomplete
-  size="medium"
-  fullWidth
-  sx={{
-    "& .MuiInputBase-root": {
-      height: "56px", // sesuaikan dengan TextField lain
-      boxSizing: "border-box",
-    },
-    "& .MuiAutocomplete-inputRoot": {
-      padding: 0, // hilangkan padding ekstra
-    },
-    "& input": {
-      padding: "10.5px 14px", // samakan padding TextField size small
-    },
-  }}
-  options={productOptions}
-  getOptionLabel={(option) =>
-    `${option.sku} - ${option.name}` || ""
-  }
-  isOptionEqualToValue={(option, value) =>
-    option.id === value?.id
-  }
-  value={item.product}
-  inputValue={productSearchTerm}
-  onInputChange={handleProductInputChange}
-  onChange={(event, newValue) =>
-    handleItemChange(index, "product", newValue)
-  }
-  loading={productLoading}
-  renderInput={(params) => (
-    <TextField
-      {...params}
-      label="Cari Produk (SKU/Nama)"
-      variant="outlined"
-      size="small"
-      required
-      error={!item.product?.id}
-      sx={{
-        "& .MuiInputBase-root": {
-          borderRadius: 1.5, // Tambahkan borderRadius di sini
-        },
-      }}
-      InputProps={{
-        ...params.InputProps,
-        endAdornment: (
-          <>
-            {productLoading ? (
-              <CircularProgress color="inherit" size={20} />
-            ) : null}
-            {params.InputProps.endAdornment}
-          </>
-        ),
-      }}
-      InputLabelProps={{
-        shrink: false,
-        sx: {
-          top: "50%",
-          left: 14,
-          transform: "translateY(-50%)",
-        },
-      }}
-    />
-  )}
-/>
-
+                              size="medium"
+                              fullWidth
+                              sx={{
+                                "& .MuiInputBase-root": {
+                                  height: "56px", // sesuaikan dengan TextField lain
+                                  boxSizing: "border-box",
+                                },
+                                "& .MuiAutocomplete-inputRoot": {
+                                  padding: 0, // hilangkan padding ekstra
+                                },
+                                "& input": {
+                                  padding: "10.5px 14px", // samakan padding TextField size small
+                                },
+                              }}
+                              options={productOptions}
+                              getOptionLabel={(option) =>
+                                `${option.sku} - ${option.name}` || ""
+                              }
+                              isOptionEqualToValue={(option, value) =>
+                                option.id === value?.id
+                              }
+                              value={item.product}
+                              inputValue={productSearchTerm}
+                              onInputChange={handleProductInputChange}
+                              onChange={(event, newValue) =>
+                                handleItemChange(index, "product", newValue)
+                              }
+                              loading={productLoading}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  label="Cari Produk (SKU/Nama)"
+                                  variant="outlined"
+                                  size="small"
+                                  required
+                                  error={!item.product?.id}
+                                  sx={{
+                                    "& .MuiInputBase-root": {
+                                      borderRadius: 1.5, // Tambahkan borderRadius di sini
+                                    },
+                                  }}
+                                  InputProps={{
+                                    ...params.InputProps,
+                                    endAdornment: (
+                                      <>
+                                        {productLoading ? (
+                                          <CircularProgress
+                                            color="inherit"
+                                            size={20}
+                                          />
+                                        ) : null}
+                                        {params.InputProps.endAdornment}
+                                      </>
+                                    ),
+                                  }}
+                                  InputLabelProps={{
+                                    shrink: false,
+                                    sx: {
+                                      top: "50%",
+                                      left: 14,
+                                      transform: "translateY(-50%)",
+                                    },
+                                  }}
+                                />
+                              )}
+                            />
                             {/* <Grid container spacing={2} alignItems="center">
                           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <FormControl fullWidth>
