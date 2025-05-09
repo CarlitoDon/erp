@@ -125,7 +125,7 @@ const CustomerInfoForm = ({ customerData, onCustomerChange }) => {
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
-                  label="Provinsi *"
+                  label="Provinsi"
                   name="province"
                   value={customerData.province || ""}
                   onChange={handleChange}

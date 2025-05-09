@@ -4,42 +4,45 @@ import {
   Autocomplete,
   TextField,
   FormControl,
-  Grid, // Pastikan import dari @mui/material/Grid
+  Grid,
   Typography,
   Box,
-  Paper, // Import Paper
+  Card,
+  CardContent,
   Chip,
   IconButton,
   CircularProgress,
+  Paper,
 } from "@mui/material";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
 const OrderItemRow = ({
   item,
   index,
-  orderItemsCount,
   productOptions,
   productLoading,
-  onItemChange, // Menerima (index, field, value)
-  onRemoveItem, // Menerima (index)
-  onProductInputChange, // Menerima (event, newInputValue)
+  productSearchTerm,
+  onItemChange,
+  onRemoveItem,
+  onProductInputChange,
+  orderItemsCount,
 }) => {
-  // Handler untuk Autocomplete selection
-  const handleProductChange = (event, newValue) => {
-    onItemChange(index, "product", newValue); // Kirim 'product' dan objek produk baru
+  // Menghitung total dari item ini
+  const calculateItemTotal = () => {
+    if (item.quantity > 0 && item.price > 0) {
+      return parseFloat(item.price) * parseInt(item.quantity);
+    }
+    return 0;
   };
 
-  // Handler untuk TextField biasa (Quantity, Price, Note)
-  const handleTextFieldChange = (event) => {
-    const { name, value } = event.target;
-    onItemChange(index, name, value); // Kirim index, nama field, dan value baru
+  // Format currency menggunakan Intl.NumberFormat untuk konsistensi
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("id-ID").format(amount);
   };
 
   return (
-    // Gunakan Paper sebagai root, tiru styling lama
     <Paper
       elevation={0}
-      key={index}
       sx={{
         p: 2,
         borderRadius: 2,
@@ -50,7 +53,7 @@ const OrderItemRow = ({
         overflow: "hidden",
       }}
     >
-      {/* Aksen visual kiri */}
+      {/* Aksen visual di sisi kiri */}
       <Box
         sx={{
           position: "absolute",
@@ -63,6 +66,7 @@ const OrderItemRow = ({
       />
 
       <Box sx={{ pl: 1 }}>
+        {/* Header dengan label produk dan tombol hapus */}
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Chip
             label={`Produk ${index + 1}`}
@@ -76,7 +80,7 @@ const OrderItemRow = ({
           />
           {orderItemsCount > 1 && (
             <IconButton
-              onClick={() => onRemoveItem(index)} // Panggil onRemoveItem dengan index
+              onClick={() => onRemoveItem(index)} // Pastikan 'index' ini benar
               color="error"
               size="small"
               sx={{ ml: "auto" }}
@@ -87,129 +91,142 @@ const OrderItemRow = ({
           )}
         </Box>
 
-        {/* Grid untuk input fields */}
+        {/* Form fields dalam Grid layout */}
         <Grid container spacing={2} alignItems="flex-start">
-          {/* Kolom Autocomplete Produk */}
-          <Grid size={{ xs: 12, sm: 6, md: 3, lg: 3 }}>
-            {" "}
-            {/* Ukuran dari kode lama (md/lg disamakan) */}
-            <Autocomplete
-              fullWidth
-              sx={{
-                "& .MuiInputBase-root": {
-                  height: "56px", // sesuaikan dengan TextField lain
-                  boxSizing: "border-box",
-                },
-                "& .MuiAutocomplete-inputRoot": {
-                  padding: 0, // hilangkan padding ekstra
-                },
-                "& input": {
-                  padding: "10.5px 14px", // samakan padding TextField size small
-                },
-              }}
-              options={productOptions || []}
-              getOptionLabel={(option) =>
-                option ? `${option.sku} - ${option.name}` : ""
-              }
-              isOptionEqualToValue={(option, value) => option?.id === value?.id}
-              value={item.product || null} // Gunakan item.product
-              onInputChange={onProductInputChange} // Teruskan handler input change
-              onChange={handleProductChange} // Gunakan handler product change
-              loading={productLoading}
-              loadingText="Mencari produk..."
-              noOptionsText={"Produk tidak ditemukan"} // Sederhanakan
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Cari Produk (SKU/Nama)"
-                  variant="outlined"
-                  size="small" // <-- Tambahkan size small seperti di kode lama
-                  required
-                  // error={false} // Sebaiknya hapus logic error sementara
-                  InputProps={{
-                    ...params.InputProps,
-                    sx: { borderRadius: 1.5 }, // Dari kode lama
-                    endAdornment: (
-                      <>
-                        {productLoading ? (
-                          <CircularProgress color="inherit" size={20} />
-                        ) : null}
-                        {params.InputProps.endAdornment}
-                      </>
-                    ),
-                  }}
-                />
-              )}
-            />
+          {" "}
+          <Grid size={{ xs: 12, sm: 6, md: 3, lg: 3 }} minWidth={"225px"}>
+            <FormControl fullWidth>
+              <Autocomplete
+                fullWidth
+                sx={{
+                  "& .MuiInputBase-root": {
+                    height: "56px",
+                    boxSizing: "border-box",
+                  },
+                  "& .MuiAutocomplete-inputRoot": {
+                    padding: 0,
+                  },
+                  "& input": {
+                    padding: "10.5px 14px",
+                  },
+                }}
+                options={productOptions || []}
+                getOptionLabel={(option) =>
+                  option ? `${option.sku} - ${option.name}` : ""
+                }
+                isOptionEqualToValue={(option, value) =>
+                  option?.id === value?.id
+                }
+                value={item.product || null}
+                onInputChange={onProductInputChange}
+                onChange={(event, newValue) => {
+                  onItemChange(index, "product", newValue);
+                }}
+                loading={productLoading}
+                loadingText="Mencari produk..."
+                noOptionsText={
+                  productSearchTerm && productSearchTerm.length < 2
+                    ? "Ketik min. 2 karakter"
+                    : "Produk tidak ditemukan"
+                }
+                renderInput={(params) =>
+                  console.log("params", params) || (
+                    <TextField
+                      {...params}
+                      label="Cari Produk (SKU/Nama)"
+                      variant="outlined"
+                      size="medium"
+                      required
+                      error={false}
+                      InputProps={{
+                        ...params.InputProps,
+                        sx: { borderRadius: 1.5 },
+                        endAdornment: (
+                          <>
+                            {productLoading ? (
+                              <CircularProgress color="inherit" size={20} />
+                            ) : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                    />
+                  )
+                }
+              />
+            </FormControl>
           </Grid>
-
           {/* Kolom Kuantitas */}
-          <Grid size={{ xs: 12, sm: 3, md: 2 }}>
+          <Grid
+            size={{ xs: 12, sm: 3, md: 2 }}
+            minWidth={"60px"}
+            maxWidth={"120px"}
+          >
             <FormControl fullWidth>
               <TextField
                 label="Kuantitas"
                 name="quantity"
                 type="number"
                 value={item.quantity}
-                onChange={handleTextFieldChange} // Gunakan handler generik
+                onChange={(e) =>
+                  onItemChange(index, e.target.name, e.target.value)
+                }
                 required
                 variant="outlined"
+                size="medium"
                 InputProps={{
-                  sx: { borderRadius: 1.5 }, // Dari kode lama
-                  inputProps: { min: 1 }, // Tambahkan validasi min
+                  sx: { borderRadius: 1.5 },
+                  inputProps: { min: 1 },
                 }}
               />
             </FormControl>
           </Grid>
-
           {/* Kolom Harga */}
-          <Grid size={{ xs: 6, sm: 3, md: 3 }}>
-            {" "}
-            {/* Ukuran dari kode lama */}
+          <Grid size={{ xs: 6, sm: 3, md: 3 }} maxWidth={"120px"}>
             <FormControl fullWidth>
               <TextField
                 label="Harga per Item (Rp)"
-                name="price" // Penting untuk handleTextFieldChange
+                name="price"
                 type="number"
                 value={item.price}
-                onChange={handleTextFieldChange} // Gunakan handler generik
+                onChange={(e) =>
+                  onItemChange(index, e.target.name, e.target.value)
+                }
                 required
                 variant="outlined"
+                size="medium"
                 InputProps={{
-                  sx: { borderRadius: 1.5 }, // Dari kode lama
-                  inputProps: { step: "any" }, // Izinkan desimal
+                  sx: { borderRadius: 1.5 },
+                  inputProps: { step: "any" },
                 }}
               />
             </FormControl>
           </Grid>
-
-          {/* Kolom Catatan Produk */}
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            {" "}
-            {/* Ukuran dari kode lama */}
+          {/* Kolom Catatan */}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} minWidth={"320px"}>
             <FormControl fullWidth>
               <TextField
                 label="Catatan Produk (Opsional)"
-                name="note" // Penting untuk handleTextFieldChange
-                value={item.note}
-                onChange={handleTextFieldChange} // Gunakan handler generik
+                name="note"
+                value={item.note || ""}
+                onChange={(e) =>
+                  onItemChange(index, e.target.name, e.target.value)
+                }
                 variant="outlined"
+                size="medium"
                 InputProps={{
-                  sx: { borderRadius: 1.5 }, // Dari kode lama
+                  sx: { borderRadius: 1.5 },
                 }}
               />
             </FormControl>
           </Grid>
         </Grid>
 
-        {/* Tampilkan Subtotal jika valid (sama seperti kode lama) */}
+        {/* Subtotal jika item valid */}
         {item.quantity > 0 && item.price > 0 && (
           <Box sx={{ mt: 2, textAlign: "right" }}>
             <Typography variant="body2" color="text.secondary">
-              Subtotal: Rp{" "}
-              {(
-                parseFloat(item.price) * parseInt(item.quantity)
-              ).toLocaleString("id-ID")}
+              Subtotal: Rp {formatCurrency(calculateItemTotal())}
             </Typography>
           </Box>
         )}

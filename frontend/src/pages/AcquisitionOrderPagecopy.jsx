@@ -78,18 +78,36 @@ const AcquisitionOrderPage = () => {
   // --- Fetch Product Options ---
   const fetchProductOptions = useCallback(
     async (searchTerm) => {
-      // ... (logika fetch produk seperti sebelumnya)
-      // Pastikan menggunakan 'token' dari scope ini
+      console.log("fetchProductOptions terpanggil dengan:", searchTerm);
       if (!token || !searchTerm || searchTerm.length < 2) {
-        /* ... */ return;
+        setProductOptions([]); // Reset opsi jika tidak ada token atau searchTerm terlalu pendek
+        setProductLoading(false);
+        return;
       }
+
       setProductLoading(true);
       try {
-        const response = await fetch(/* ... */);
-        // ... handle response ...
+        const response = await fetch(`/api/products/search?q=${searchTerm}`, {
+          headers: {
+            Authorization: `Bearer ${token}`, // Sertakan token di header
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error("Gagal mengambil opsi produk:", errorData);
+          setSubmitError("Gagal mengambil opsi produk dari server.");
+          setProductOptions([]);
+          return;
+        }
+
+        const data = await response.json();
+        console.log("Data produk dari API:", data);
         setProductOptions(data || []);
       } catch (error) {
-        /* ... */
+        console.error("Terjadi kesalahan saat mengambil opsi produk:", error);
+        setSubmitError("Terjadi kesalahan saat menghubungi server.");
+        setProductOptions([]);
       } finally {
         setProductLoading(false);
       }
@@ -113,7 +131,8 @@ const AcquisitionOrderPage = () => {
   }, []);
 
   const handleRemoveItem = useCallback((index) => {
-    setOrderItems((prev) => prev.filter((_, i) => i !== index));
+    const newItems = orderItems.filter((_, i) => i !== index); // Cara immutable
+    setOrderItems(newItems);
   }, []);
 
   const handleItemChange = useCallback((index, field, value) => {
@@ -147,20 +166,19 @@ const AcquisitionOrderPage = () => {
         // Ambil harga dan kuantitas, pastikan berupa angka
         const price = parseFloat(currentItem.price) || 0;
         const quantity = parseInt(currentItem.quantity) || 0;
-  
+
         // Hitung subtotal item ini
         const subtotal = price * quantity;
-  
+
         // Kembalikan akumulator + subtotal untuk iterasi selanjutnya
         return totalAccumulator + subtotal;
       },
       // Argumen 2: Nilai Awal untuk Akumulator
       0
     );
-  
+
     // Format hasil akhir sebagai string mata uang Indonesia
-    return totalValue.toLocaleString('id-ID');
-  
+    return totalValue.toLocaleString("id-ID");
   }, [orderItems]); // Dependensi sudah benar
 
   // --- Fetch Shipping Providers ---
@@ -305,11 +323,31 @@ const AcquisitionOrderPage = () => {
   // == Render Komponen Anak ==
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Paper /* ... props paper ... */>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 0,
+          borderRadius: 3,
+          overflow: "hidden",
+          border: "1px solid #e0e0e0",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
+        }}
+      >
         {/* Header */}
-        <Box /* ... props header ... */>
-          <Typography variant="h4">Form Input Order Akuisisi</Typography>
-          {/* ... */}
+        <Box
+          sx={{
+            p: 3,
+            background: "linear-gradient(90deg, #3f51b5 0%, #5c6bc0 100%)",
+            color: "white",
+            mb: 3,
+          }}
+        >
+          <Typography variant="h4" fontWeight="600" gutterBottom color="white">
+            Form Input Order Akuisisi
+          </Typography>
+          <Typography variant="subtitle1">
+            Silakan lengkapi detail informasi di bawah ini
+          </Typography>
         </Box>
 
         <Box sx={{ px: 4, pb: 4 }}>

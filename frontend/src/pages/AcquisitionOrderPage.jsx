@@ -698,13 +698,19 @@ const AcquisitionOrderPage = () => {
                               color="error"
                               size="small"
                               sx={{ ml: "auto" }}
+                              aria-label={`Hapus Produk ${index + 1}`}
                             >
                               <DeleteOutlineIcon />
                             </IconButton>
                           )}
                         </Box>
 
-                        <Grid container spacing={2} alignItems="flex-start">
+                        <Grid
+                          container
+                          spacing={2}
+                          wrap="warp"
+                          alignItems="flex-start"
+                        >
                           <Grid size={{ xs: 12, sm: 6, md: 3, lg: 3 }}>
                             {" "}
                             <Autocomplete
@@ -1154,7 +1160,6 @@ const AcquisitionOrderPage = () => {
                           Metode Pengiriman
                         </Typography>
                       </Box>
-
                       <FormControl fullWidth margin="normal" required>
                         <InputLabel id="shipping-provider-label">
                           Pilih Jasa Kirim

@@ -77,31 +77,31 @@ const OrderItemsSection = ({
               gap: 2, // Jarak jika wrap
             }}
           >
-            {/* Tombol Tambah Produk (Styling dari kode lama) */}
+            {/* Tombol Tambah Produk */}
             <Button
               onClick={onAddItem}
               startIcon={<AddCircleOutlineIcon />}
               sx={{
-                borderRadius: 6, // Dari kode lama
-                bgcolor: "#e8eaf6", // Dari kode lama
-                color: "#3f51b5", // Dari kode lama
+                borderRadius: 6,
+                bgcolor: "#e8eaf6",
+                color: "#3f51b5",
                 "&:hover": {
-                  bgcolor: "#c5cae9", // Dari kode lama
+                  bgcolor: "#c5cae9",
                 },
-                px: 2, // Dari kode lama
+                px: 2,
                 // Hapus textTransform: 'none' jika ingin uppercase seperti default Button
               }}
             >
               Tambah Produk {/* Ubah teks kembali */}
             </Button>
 
-            {/* Tampilan Total Pesanan (Styling dari kode lama) */}
+            {/* Tampilan Total Pesanan */}
             <Box
               sx={{
-                bgcolor: "#f5f5f5", // Dari kode lama
-                p: 2, // <-- Ubah kembali ke p: 2
-                borderRadius: 2, // Dari kode lama
-                display: "inline-block", // <-- Tambahkan kembali dari kode lama
+                bgcolor: "#f5f5f5",
+                p: 2,
+                borderRadius: 2,
+                display: "inline-block",
               }}
             >
               <Typography variant="subtitle1" fontWeight="bold">
