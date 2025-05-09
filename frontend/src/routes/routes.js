@@ -87,6 +87,11 @@ const routes = [
           // Children di sini akan mewarisi role parent secara implisit
           // jika tidak didefinisikan ulang
           {
+            path: "input-order-new",
+            component: "AcquisitionOrderPagecopy",
+            title: "Input Order (Acquisition)",
+          },
+          {
             path: "input-order",
             component: "AcquisitionOrderPage",
             title: "Input Order (Acquisition)",

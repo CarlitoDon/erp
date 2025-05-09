@@ -2,12 +2,36 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
-// Fungsi searchProducts dari sebelumnya (jika sudah ada)
 const searchProducts = async (req, res) => {
-  // ... (kode searchProducts) ...
+  const { q } = req.query; // Ambil parameter pencarian 'q'
+  if (!q || q.length < 2) {
+    return res.json([]); // Kembalikan array kosong jika query terlalu pendek
+  }
+
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { sku: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        price: true,
+      },
+      take: 10, // Batasi hasil maksimal 10 produk
+    });
+
+    res.json(products);
+  } catch (error) {
+    console.error("Error searching products:", error);
+    res.status(500).json({ message: "Gagal mencari produk." });
+  }
 };
 
-// --- FUNGSI BARU: Create Product ---
 const createProduct = async (req, res) => {
   const { name, sku, price, stock } = req.body; // Ambil data dari body
 

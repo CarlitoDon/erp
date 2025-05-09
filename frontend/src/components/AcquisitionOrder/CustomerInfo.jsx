@@ -57,7 +57,7 @@ const CustomerInfo = ({
         </FormControl>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }} >
             <FormControl fullWidth margin="normal">
               <TextField
                 label="Nomor Telepon Customer"
@@ -75,7 +75,7 @@ const CustomerInfo = ({
               />
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={6}>
+          <Grid size={{ xs: 12, md: 6 }} >
             <FormControl fullWidth margin="normal">
               <TextField
                 label="Email Customer (Opsional)"
@@ -105,10 +105,10 @@ const CustomerInfo = ({
         </FormControl>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 6 }} >
             <FormControl fullWidth margin="normal">
               <TextField
-                label="Provinsi *"
+                label="Provinsi"
                 value={newCustomerProvince}
                 onChange={(e) => setNewCustomerProvince(e.target.value)}
                 variant="outlined"
@@ -118,7 +118,7 @@ const CustomerInfo = ({
               />
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 6 }} >
             <FormControl fullWidth margin="normal">
               <TextField
                 label="Kota/Kabupaten *"
@@ -131,7 +131,7 @@ const CustomerInfo = ({
               />
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 6 }} >
             <FormControl fullWidth margin="normal">
               <TextField
                 label="Kecamatan *"
@@ -144,7 +144,7 @@ const CustomerInfo = ({
               />
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 6 }} >
             <FormControl fullWidth margin="normal">
               <TextField
                 label="Desa/Kelurahan *"
@@ -157,7 +157,7 @@ const CustomerInfo = ({
               />
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 6 }} >
             <FormControl fullWidth margin="normal">
               <TextField
                 label="Kode Pos (Opsional)"
