@@ -6,8 +6,7 @@ import {
   Routes,
   Route,
   Navigate,
-  Outlet,
-} from "react-router-dom";
+  } from "react-router-dom";
 
 // Komponen UI & Layout
 import Navbar from "./components/Navbar/Navbar";

@@ -58,6 +58,8 @@ export default function ThemeProvider({ children }) {
           },
         },
         typography: {
+          // === TAMBAHKAN ATAU UBAH BARIS BERIKUT ===
+          fontSize: 11, // <--- Ubah angka ini ke ukuran font dasar yang kamu inginkan (misal: 12, 13, 14) // =========================================
           fontFamily: `'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif`,
           button: {
             textTransform: "none",
@@ -67,7 +69,7 @@ export default function ThemeProvider({ children }) {
             color: colors.primary, // h4 tetap pakai warna primer
           },
           body2: {
-            fontSize: "0.875rem",
+            fontSize: "0.875rem", // Ini adalah default untuk body2, yang akan relatif terhadap fontSize di atas
           },
         },
         components: {
