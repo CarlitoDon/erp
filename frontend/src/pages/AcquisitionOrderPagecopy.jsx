@@ -66,7 +66,6 @@ const AcquisitionOrderPage = () => {
   const [shippingProviderId, setShippingProviderId] = useState("");
   const [shippingProviders, setShippingProviders] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [totalPayment, setTotalPayment] = useState(""); // Opsional
   // Product Search
   const [productOptions, setProductOptions] = useState([]);
   const [productLoading, setProductLoading] = useState(false);
@@ -612,8 +611,6 @@ const AcquisitionOrderPage = () => {
               onShippingProviderChange={handleShippingProviderChange}
               paymentMethod={paymentMethod}
               onPaymentMethodChange={handlePaymentMethodChange}
-              totalPayment={totalPayment}
-              onTotalPaymentChange={handleTotalPaymentChange}
             />
 
             {/* Order Summary (Contoh) */}
