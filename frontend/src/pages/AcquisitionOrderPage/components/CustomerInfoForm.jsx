@@ -1,9 +1,12 @@
 // src/pages/AcquisitionOrderPage/components/CustomerInfoForm.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   TextField,
   FormControl,
-  Grid, // Pastikan import Grid dari '@mui/material/Grid' (bukan GridLegacy)
+  InputLabel, // Tambahkan InputLabel
+  Select, // Tambahkan Select
+  MenuItem, // Tambahkan MenuItem
+  Grid,
   Typography,
   Box,
   Card,
@@ -12,6 +15,9 @@ import {
   CircularProgress,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
+
+// --- URL Dasar API NusantaraKita ---
+const BASE_API_URL = "https://www.emsifa.com/api-wilayah-indonesia/api";
 
 const CustomerInfoForm = ({
   customerData,
@@ -22,6 +28,181 @@ const CustomerInfoForm = ({
   isPhoneNumberChecking, // Boolean untuk loading
   // --- Akhir Props Baru ---
 }) => {
+  // --- STATE BARU UNTUK DROPDOWN DINAMIS ---
+  const [provinces, setProvinces] = useState([]);
+  const [regencies, setRegencies] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [villages, setVillages] = useState([]);
+
+  // State untuk menyimpan ID yang dipilih
+  const [selectedProvinceId, setSelectedProvinceId] = useState("");
+  const [selectedRegencyId, setSelectedRegencyId] = useState("");
+  const [selectedDistrictId, setSelectedDistrictId] = useState("");
+  const [selectedVillageId, setSelectedVillageId] = useState("");
+
+  // State untuk loading
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingRegencies, setLoadingRegencies] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingVillages, setLoadingVillages] = useState(false);
+  // --- AKHIR STATE BARU ---
+
+  // --- SIDE EFFECTS UNTUK FETCH DATA API ---
+
+  // Effect untuk mengambil daftar provinsi saat komponen pertama kali dimuat
+  useEffect(() => {
+    const fetchProvinces = async () => {
+      setLoadingProvinces(true);
+      try {
+        const response = await fetch(`${BASE_API_URL}/provinces.json`);
+        const data = await response.json();
+        setProvinces(data);
+        setLoadingProvinces(false);
+      } catch (error) {
+        console.error("Error fetching provinces:", error);
+        setLoadingProvinces(false);
+        // Handle error (misalnya tampilkan pesan ke pengguna)
+      }
+    };
+    fetchProvinces();
+  }, []); // [] agar hanya dijalankan sekali saat mount
+
+  // Effect untuk mengambil daftar kota/kabupaten saat provinsi dipilih
+  useEffect(() => {
+    if (selectedProvinceId) {
+      setLoadingRegencies(true);
+      const fetchRegencies = async () => {
+        try {
+          const response = await fetch(
+            `${BASE_API_URL}/regencies/${selectedProvinceId}.json`
+          );
+          const data = await response.json();
+          setRegencies(data);
+          setLoadingRegencies(false);
+          // Reset pilihan kota/kecamatan/desa jika provinsi berubah
+          setSelectedRegencyId("");
+          setSelectedDistrictId("");
+          setSelectedVillageId("");
+          setDistricts([]); // Kosongkan daftar kecamatan
+          setVillages([]); // Kosongkan daftar desa
+          onCustomerChange("city", ""); // Reset nama kota di customerData
+          onCustomerChange("district", ""); // Reset nama kecamatan
+          onCustomerChange("village", ""); // Reset nama desa
+        } catch (error) {
+          console.error("Error fetching regencies:", error);
+          setLoadingRegencies(false);
+        }
+      };
+      fetchRegencies();
+    } else {
+      setRegencies([]); // Kosongkan daftar kota jika tidak ada provinsi terpilih
+      setSelectedRegencyId("");
+      setSelectedDistrictId("");
+      setSelectedVillageId("");
+      setDistricts([]);
+      setVillages([]);
+      onCustomerChange("city", "");
+      onCustomerChange("district", "");
+      onCustomerChange("village", "");
+    }
+  }, [selectedProvinceId]); // Jalankan ulang saat selectedProvinceId berubah
+
+  // Effect untuk mengambil daftar kecamatan saat kota/kabupaten dipilih
+  useEffect(() => {
+    if (selectedRegencyId) {
+      setLoadingDistricts(true);
+      const fetchDistricts = async () => {
+        try {
+          const response = await fetch(
+            `${BASE_API_URL}/districts/${selectedRegencyId}.json`
+          );
+          const data = await response.json();
+          setDistricts(data);
+          setLoadingDistricts(false);
+          // Reset pilihan kecamatan/desa jika kota berubah
+          setSelectedDistrictId("");
+          setSelectedVillageId("");
+          setVillages([]);
+          onCustomerChange("district", "");
+          onCustomerChange("village", "");
+        } catch (error) {
+          console.error("Error fetching districts:", error);
+          setLoadingDistricts(false);
+        }
+      };
+      fetchDistricts();
+    } else {
+      setDistricts([]);
+      setSelectedDistrictId("");
+      setSelectedVillageId("");
+      setVillages([]);
+      onCustomerChange("district", "");
+      onCustomerChange("village", "");
+    }
+  }, [selectedRegencyId]); // Jalankan ulang saat selectedRegencyId berubah
+
+  // Effect untuk mengambil daftar desa/kelurahan saat kecamatan dipilih
+  useEffect(() => {
+    if (selectedDistrictId) {
+      setLoadingVillages(true);
+      const fetchVillages = async () => {
+        try {
+          const response = await fetch(
+            `${BASE_API_URL}/villages/${selectedDistrictId}.json`
+          );
+          const data = await response.json();
+          setVillages(data);
+          setLoadingVillages(false);
+          // Reset pilihan desa jika kecamatan berubah
+          setSelectedVillageId("");
+          onCustomerChange("village", "");
+        } catch (error) {
+          console.error("Error fetching villages:", error);
+          setLoadingVillages(false);
+        }
+      };
+      fetchVillages();
+    } else {
+      setVillages([]);
+      setSelectedVillageId("");
+      onCustomerChange("village", "");
+    }
+  }, [selectedDistrictId]); // Jalankan ulang saat selectedDistrictId berubah
+
+  // --- HANDLER UNTUK PERUBAHAN DROPDOWN ---
+  const handleProvinceChange = (event) => {
+    const provinceId = event.target.value;
+    setSelectedProvinceId(provinceId);
+    // Cari nama provinsi dari daftar untuk disimpan ke customerData
+    const selectedProvinceName =
+      provinces.find((p) => p.id === provinceId)?.name || "";
+    onCustomerChange("province", selectedProvinceName);
+  };
+
+  const handleRegencyChange = (event) => {
+    const regencyId = event.target.value;
+    setSelectedRegencyId(regencyId);
+    const selectedRegencyName =
+      regencies.find((r) => r.id === regencyId)?.name || "";
+    onCustomerChange("city", selectedRegencyName); // "city" untuk kota/kabupaten
+  };
+
+  const handleDistrictChange = (event) => {
+    const districtId = event.target.value;
+    setSelectedDistrictId(districtId);
+    const selectedDistrictName =
+      districts.find((d) => d.id === districtId)?.name || "";
+    onCustomerChange("district", selectedDistrictName);
+  };
+
+  const handleVillageChange = (event) => {
+    const villageId = event.target.value;
+    setSelectedVillageId(villageId);
+    const selectedVillageName =
+      villages.find((v) => v.id === villageId)?.name || "";
+    onCustomerChange("village", selectedVillageName);
+  };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
 
@@ -108,8 +289,9 @@ const CustomerInfoForm = ({
           {/* Telepon & Email */}
           <Grid container spacing={2}>
             {/* Telepon */}
-            {/* Hapus 'item' prop, gunakan 'size' prop */}
             <Grid size={{ xs: 12, sm: 6 }}>
+              {" "}
+              {/* Gunakan 'item' dan 'xs', 'sm', 'md' */}
               <FormControl fullWidth margin="normal">
                 <TextField
                   label="Nomor Telepon Customer"
@@ -119,11 +301,10 @@ const CustomerInfoForm = ({
                   required
                   variant="outlined"
                   placeholder="81234567890"
-                  type="tel" // Pastikan tipe input adalah tel
-                  // --- Props Modifikasi ---
-                  error={isPhoneNumberValid === false} // Merah jika tidak valid
-                  helperText={getPhoneNumberHelperText()} // Tampilkan pesan
-                  color={getPhoneNumberBorderColor()} // Atur warna border
+                  type="tel"
+                  error={isPhoneNumberValid === false}
+                  helperText={getPhoneNumberHelperText()}
+                  color={getPhoneNumberBorderColor()}
                   InputProps={{
                     sx: { borderRadius: 1.5 },
                     startAdornment: (
@@ -131,7 +312,7 @@ const CustomerInfoForm = ({
                         <Box sx={{ mr: 1, color: "text.secondary" }}>+62</Box>
                       </InputAdornment>
                     ),
-                    endAdornment: ( // Tampilkan loading spinner
+                    endAdornment: (
                       <InputAdornment position="end">
                         {isPhoneNumberChecking && (
                           <CircularProgress size={20} />
@@ -143,7 +324,6 @@ const CustomerInfoForm = ({
               </FormControl>
             </Grid>
             {/* Email */}
-            {/* Hapus 'item' prop, gunakan 'size' prop */}
             <Grid size={{ xs: 12, sm: 6 }}>
               <FormControl fullWidth margin="normal">
                 <TextField
@@ -174,71 +354,130 @@ const CustomerInfoForm = ({
             />
           </FormControl>
 
-          {/* Alamat Detail */}
+          {/* Alamat Detail - DROPDOWN DINAMIS */}
           <Grid container spacing={2}>
             {/* Provinsi */}
-            {/* Hapus 'item' prop, gunakan 'size' prop */}
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <FormControl fullWidth margin="normal">
-                <TextField
-                  label="Provinsi"
-                  name="province"
-                  value={customerData.province || ""}
-                  onChange={handleChange}
-                  required
-                  variant="outlined"
-                  InputProps={{ sx: { borderRadius: 1.5 } }}
-                />
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="province-label">Provinsi</InputLabel>
+                <Select
+                  labelId="province-label"
+                  id="province-select"
+                  value={selectedProvinceId}
+                  label="Provinsi *"
+                  onChange={handleProvinceChange}
+                  sx={{ borderRadius: 1.5 }}
+                  // Jika sedang memuat provinsi, disable dropdown
+                  disabled={loadingProvinces}
+                >
+                  {loadingProvinces && (
+                    <MenuItem disabled>Memuat provinsi...</MenuItem>
+                  )}
+                  {!loadingProvinces && provinces.length === 0 && (
+                    <MenuItem disabled>Tidak ada provinsi ditemukan</MenuItem>
+                  )}
+                  {provinces.map((province) => (
+                    <MenuItem key={province.id} value={province.id}>
+                      {province.name}
+                    </MenuItem>
+                  ))}
+                </Select>
               </FormControl>
             </Grid>
+
             {/* Kota/Kabupaten */}
-             {/* Hapus 'item' prop, gunakan 'size' prop */}
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <FormControl fullWidth margin="normal">
-                <TextField
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="regency-label">Kota/Kabupaten</InputLabel>
+                <Select
+                  labelId="regency-label"
+                  id="regency-select"
+                  value={selectedRegencyId}
                   label="Kota/Kabupaten *"
-                  name="city"
-                  value={customerData.city || ""}
-                  onChange={handleChange}
-                  required
-                  variant="outlined"
-                  InputProps={{ sx: { borderRadius: 1.5 } }}
-                />
+                  onChange={handleRegencyChange}
+                  sx={{ borderRadius: 1.5 }}
+                  // Disable jika belum ada provinsi terpilih atau sedang loading
+                  disabled={!selectedProvinceId || loadingRegencies}
+                >
+                  {loadingRegencies && (
+                    <MenuItem disabled>Memuat kota/kabupaten...</MenuItem>
+                  )}
+                  {!loadingRegencies && regencies.length === 0 && (
+                    <MenuItem disabled>Pilih provinsi terlebih dahulu</MenuItem>
+                  )}
+                  {regencies.map((regency) => (
+                    <MenuItem key={regency.id} value={regency.id}>
+                      {regency.name}
+                    </MenuItem>
+                  ))}
+                </Select>
               </FormControl>
             </Grid>
+
             {/* Kecamatan */}
-             {/* Hapus 'item' prop, gunakan 'size' prop */}
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <FormControl fullWidth margin="normal">
-                <TextField
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="district-label">Kecamatan</InputLabel>
+                <Select
+                  labelId="district-label"
+                  id="district-select"
+                  value={selectedDistrictId}
                   label="Kecamatan *"
-                  name="district"
-                  value={customerData.district || ""}
-                  onChange={handleChange}
-                  required
-                  variant="outlined"
-                  InputProps={{ sx: { borderRadius: 1.5 } }}
-                />
+                  onChange={handleDistrictChange}
+                  sx={{ borderRadius: 1.5 }}
+                  // Disable jika belum ada kota terpilih atau sedang loading
+                  disabled={!selectedRegencyId || loadingDistricts}
+                >
+                  {loadingDistricts && (
+                    <MenuItem disabled>Memuat kecamatan...</MenuItem>
+                  )}
+                  {!loadingDistricts && districts.length === 0 && (
+                    <MenuItem disabled>
+                      Pilih kota/kabupaten terlebih dahulu
+                    </MenuItem>
+                  )}
+                  {districts.map((district) => (
+                    <MenuItem key={district.id} value={district.id}>
+                      {district.name}
+                    </MenuItem>
+                  ))}
+                </Select>
               </FormControl>
             </Grid>
+
             {/* Desa/Kelurahan */}
-             {/* Hapus 'item' prop, gunakan 'size' prop */}
             <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-              <FormControl fullWidth margin="normal">
-                <TextField
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="village-label">Desa/Kelurahan</InputLabel>
+                <Select
+                  labelId="village-label"
+                  id="village-select"
+                  value={selectedVillageId}
                   label="Desa/Kelurahan *"
-                  name="village"
-                  value={customerData.village || ""}
-                  onChange={handleChange}
-                  required
-                  variant="outlined"
-                  InputProps={{ sx: { borderRadius: 1.5 } }}
-                />
+                  onChange={handleVillageChange}
+                  sx={{ borderRadius: 1.5 }}
+                  // Disable jika belum ada kecamatan terpilih atau sedang loading
+                  disabled={!selectedDistrictId || loadingVillages}
+                >
+                  {loadingVillages && (
+                    <MenuItem disabled>Memuat desa/kelurahan...</MenuItem>
+                  )}
+                  {!loadingVillages && villages.length === 0 && (
+                    <MenuItem disabled>
+                      Pilih kecamatan terlebih dahulu
+                    </MenuItem>
+                  )}
+                  {villages.map((village) => (
+                    <MenuItem key={village.id} value={village.id}>
+                      {village.name}
+                    </MenuItem>
+                  ))}
+                </Select>
               </FormControl>
             </Grid>
+
             {/* Kode Pos */}
-             {/* Hapus 'item' prop, gunakan 'size' prop */}
-            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth margin="normal">
                 <TextField
                   label="Kode Pos (Opsional)"
