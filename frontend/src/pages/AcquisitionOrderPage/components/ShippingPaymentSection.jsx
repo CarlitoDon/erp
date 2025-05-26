@@ -31,8 +31,6 @@ const ShippingPaymentSection = ({
   onShippingProviderChange, // Handler untuk event change Select jasa kirim
   paymentMethod,
   onPaymentMethodChange, // Handler untuk event change Select metode bayar
-  totalPayment, // Nilai input total bayar
-  onTotalPaymentChange, // Handler untuk event change input total bayar
 }) => {
   return (
     <Card
@@ -138,26 +136,6 @@ const ShippingPaymentSection = ({
                     </MenuItem>
                   ))}
                 </Select>
-              </FormControl>
-              {/* Input Total Pembayaran (Opsional) */}
-              <FormControl fullWidth margin="normal">
-                <TextField
-                  label="Nominal Pembayaran (Opsional)"
-                  id="total-payment-input"
-                  type="number"
-                  value={totalPayment}
-                  onChange={onTotalPaymentChange} // Panggil handler dari parent
-                  variant="outlined"
-                  InputProps={{
-                    sx: { borderRadius: 1.5 },
-                    startAdornment: (
-                      // Tampilkan 'Rp' jika diperlukan
-                      <InputAdornment position="start">Rp</InputAdornment>
-                    ),
-                    inputProps: { step: "any" }, // Izinkan desimal
-                  }}
-                  placeholder="Contoh: 50000"
-                />
               </FormControl>
             </Grid>
           </Grid>
