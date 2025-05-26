@@ -9,13 +9,57 @@ import {
   Card,
   CardContent,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 
-const CustomerInfoForm = ({ customerData, onCustomerChange }) => {
+const CustomerInfoForm = ({
+  customerData,
+  onCustomerChange,
+  // --- Props Baru ---
+  isPhoneNumberValid, // null, true, atau false
+  phoneNumberError, // Pesan error jika isPhoneNumberValid false
+  isPhoneNumberChecking, // Boolean untuk loading
+  // --- Akhir Props Baru ---
+}) => {
   const handleChange = (event) => {
     const { name, value } = event.target;
+
+    // Validasi awalan '0'
+    if (name === "phone") {
+      if (value.startsWith("0") && value.length > 0) {
+        return;
+      }
+    }
     onCustomerChange(name, value);
+  };
+
+  // Tentukan warna border berdasarkan status validasi
+  const getPhoneNumberBorderColor = () => {
+    if (isPhoneNumberChecking) {
+      return "primary"; // Atau 'info' untuk warna biru muda
+    }
+    if (isPhoneNumberValid === true) {
+      return "success"; // Hijau jika valid
+    }
+    if (isPhoneNumberValid === false) {
+      return "error"; // Merah jika tidak valid
+    }
+    return undefined; // Default Material-UI jika belum divalidasi
+  };
+
+  // Tentukan pesan bantuan
+  const getPhoneNumberHelperText = () => {
+    if (isPhoneNumberChecking) {
+      return "Memeriksa ketersediaan nomor...";
+    }
+    if (phoneNumberError) {
+      return phoneNumberError;
+    }
+    if (isPhoneNumberValid === true) {
+      return "Nomor telepon tersedia!";
+    }
+    return "Masukkan nomor telepon tanpa awalan 0"; // Pesan default
   };
 
   return (
@@ -75,11 +119,23 @@ const CustomerInfoForm = ({ customerData, onCustomerChange }) => {
                   required
                   variant="outlined"
                   placeholder="81234567890"
+                  type="tel" // Pastikan tipe input adalah tel
+                  // --- Props Modifikasi ---
+                  error={isPhoneNumberValid === false} // Merah jika tidak valid
+                  helperText={getPhoneNumberHelperText()} // Tampilkan pesan
+                  color={getPhoneNumberBorderColor()} // Atur warna border
                   InputProps={{
                     sx: { borderRadius: 1.5 },
                     startAdornment: (
                       <InputAdornment position="start">
                         <Box sx={{ mr: 1, color: "text.secondary" }}>+62</Box>
+                      </InputAdornment>
+                    ),
+                    endAdornment: ( // Tampilkan loading spinner
+                      <InputAdornment position="end">
+                        {isPhoneNumberChecking && (
+                          <CircularProgress size={20} />
+                        )}
                       </InputAdornment>
                     ),
                   }}

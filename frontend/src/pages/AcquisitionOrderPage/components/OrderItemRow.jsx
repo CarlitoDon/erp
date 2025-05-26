@@ -129,30 +129,28 @@ const OrderItemRow = ({
                     ? "Ketik min. 2 karakter"
                     : "Produk tidak ditemukan"
                 }
-                renderInput={(params) =>
-                  console.log("params", params) || (
-                    <TextField
-                      {...params}
-                      label="Cari Produk (SKU/Nama)"
-                      variant="outlined"
-                      size="medium"
-                      required
-                      error={false}
-                      InputProps={{
-                        ...params.InputProps,
-                        sx: { borderRadius: 1.5 },
-                        endAdornment: (
-                          <>
-                            {productLoading ? (
-                              <CircularProgress color="inherit" size={20} />
-                            ) : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                    />
-                  )
-                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Cari Produk (SKU/Nama)"
+                    variant="outlined"
+                    size="medium"
+                    required
+                    error={false}
+                    InputProps={{
+                      ...params.InputProps,
+                      sx: { borderRadius: 1.5 },
+                      endAdornment: (
+                        <>
+                          {productLoading ? (
+                            <CircularProgress color="inherit" size={20} />
+                          ) : null}
+                          {params.InputProps.endAdornment}
+                        </>
+                      ),
+                    }}
+                  />
+                )}
               />
             </FormControl>
           </Grid>

@@ -1,3 +1,5 @@
+// /backend/prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -199,8 +201,9 @@ model OrderItem {
   unitPriceAfterDiscount Float
   itemPlatformDiscount   Float   @default(0)
   itemSellerDiscount     Float   @default(0)
+  note                   String? // <--- TAMBAHKAN BARIS INI
 
-  @@unique([orderId, productId, platformSkuId]) // PERTIMBANGKAN KEUNIKAN JIKA platformSkuId BISA NULL
+  @@unique([orderId, productId, platformSkuId])
 }
 
 model Product {

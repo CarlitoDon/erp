@@ -6,7 +6,11 @@ const prisma = new PrismaClient();
 // Definisikan ROLES agar konsisten dengan Prisma Enum (jika perlu)
 const UserRole = {
   ADMIN: "ADMIN",
-  // ... role lainnya ...
+  SALES_ACQUISITION: "SALES_ACQUISITION",
+  SALES_RETENTION: "SALES_RETENTION",
+  MARKETPLACE_MANAGER: "MARKETPLACE_MANAGER",
+  WAREHOUSE_STAFF: "WAREHOUSE_STAFF",
+  FINANCE_STAFF: "FINANCE_STAFF",
 };
 
 const authenticateToken = (req, res, next) => {
@@ -51,7 +55,32 @@ const authorizeAdmin = (req, res, next) => {
   }
 };
 
+// Middleware untuk otorisasi berdasarkan peran (menerima array peran)
+const authorize = (roles = []) => {
+  return (req, res, next) => {
+    // Middleware ini dijalankan SETELAH authenticateToken
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized: No user found" });
+    }
+
+    if (roles.length === 0) {
+      return next(); // Jika tidak ada peran spesifik yang dibutuhkan, lanjutkan
+    }
+
+    if (roles.includes(req.user.role)) {
+      next(); // Peran pengguna sesuai dengan salah satu peran yang diizinkan
+    } else {
+      res.status(403).json({
+        message: `Forbidden: Requires one of the following roles: ${roles.join(
+          ", "
+        )}`,
+      }); // Peran tidak sesuai, tolak akses
+    }
+  };
+};
+
 module.exports = {
   authenticateToken,
   authorizeAdmin,
+  authorize, // Ekspor fungsi authorize
 };
